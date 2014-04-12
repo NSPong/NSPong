@@ -22,7 +22,7 @@
             CLIENT_ID: 0,						// If an object has a client id of zero, that means it is owned by the server
             SOCKET_PROTOCOL: "http",
             SOCKET_DOMAIN: "localhost",
-            SOCKET_PORT: 8081,
+            SOCKET_PORT: 8085,
 
             /** @return {string} */
             GET_URI: function () {

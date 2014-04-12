@@ -15,7 +15,43 @@
  1.0
  */
 (function () {
+    var util = require('util');
     var BOX2D = require("./lib/box2d.js");
+    var NSP = require("./lib/nsp.js");
+
+    // Array of player objects
+    var players = [];
+    // Array of endpoint names whiches resource availability has been checked
+    var checked_endpoints = [];
+
+    var nsp = new NSP({
+        host: 'localhost',
+        port: 8080,
+        username: 'admin',
+        password: 'secret',
+        domain: 'domain',
+        push_url: 'http://localhost:4004/events'
+    });
+
+    setInterval(function(){
+        if (!nsp.push_url_set) {
+            nsp.setNotificationPushURL();
+        }
+        nsp.updateEndpoints();
+        util.log('Endpoints:');
+        util.log(util.inspect(nsp.endpoints, {depth: null}));
+    }, 5000);
+
+    nsp.on('endpoint_metadata_changed', function(ep) {
+        for (var i in ep.meta) {
+            var resource = ep.meta[i];
+            if (resource.uri == '/acc') {
+                nsp.subscribeEndpoint(ep.name, resource.uri);
+                nsp.callEndpoint(ep.name, resource.uri, 'y');
+            }
+        }
+    });
+
     DemoBox2D.DemoServerGame = function () {
         DemoBox2D.DemoServerGame.superclass.constructor.call(this);
 
@@ -182,6 +218,10 @@
          */
         resetRandomBody: function () {
             // Retrieve a random key, and use it to retreive an entity
+
+
+
+            /*
             var allEntities = this.fieldController.getEntities();
             var randomKeyIndex = Math.floor(Math.random() * allEntities._keys.length);
             var entity = allEntities.objectForKey(allEntities._keys[randomKeyIndex]);
@@ -189,6 +229,7 @@
             var x = Math.random() * DemoBox2D.Constants.GAME_WIDTH + DemoBox2D.Constants.ENTITY_BOX_SIZE;
             var y = Math.random() * -15;
             entity.getBox2DBody().SetPosition(new BOX2D.b2Vec2(x, y));
+            */
         },
 
         step: function (delta) {

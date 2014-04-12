@@ -13,6 +13,12 @@
  1.0
  */
 
+var util = require('util');
+var http = require('http');
+var path = require('path');
+var express = require('express');
+var BOX2D = require("./lib/box2d.js");
+
 require("../lib/SortedLookupTable.js");
 require("../core/RealtimeMutliplayerGame.js");
 require("../model/Point.js");
@@ -37,3 +43,74 @@ require("./DemoBox2DServerGame.js");
 
 var game = new DemoBox2D.DemoServerGame();
 game.startGameClock();
+
+// HTTP server for receiving NSP notifications and serving files
+var http_server = express();
+var server = http.createServer(http_server);
+var port = process.env.PORT || 4004;
+server.listen(port);
+util.log('Express listening on port '+port);
+
+http_server.get('/', function(req, res) {
+    var index = path.join(path.dirname(path.dirname(__dirname)), 'DemoBox2DApp.html');
+    util.log(util.format('Express :: Trying to load %s', index));
+    res.sendfile(index);
+});
+
+//This handler will listen for requests on /*, any file from the root of our server.
+//See expressjs documentation for more info on routing.
+http_server.get('/*', function(req, res, next) {
+
+    //This is the current file they have requested
+    var file = req.params[0];
+
+    //For debugging, we can track what files are requested.
+    util.log('Express :: file requested : ' + file);
+
+    //Send the requesting client the file.
+    res.sendfile(path.join(path.dirname(path.dirname(__dirname)), file));
+});
+
+// NSP event handler
+http_server.put('/events', function(req, res, next) {
+
+    var body = '';
+    req.setEncoding('utf8');
+    req.on('data', function(chunk){
+        body += chunk;
+    });
+
+    req.on('end', function(){
+
+        try {
+            var data = JSON.parse(body);
+        }
+        catch (err) {
+            res.statusCode = 400;
+            return res.end('Error: ' + err.message);
+        }
+
+        if ('notifications' in data) {
+            //console.log(data);
+            var buf = new Buffer(data['notifications'][0]['payload'], 'base64');
+            //var acc = parseFloat(buf.toString());
+            var acc = buf.toString();
+            var ep = data['notifications'][0]['ep'];
+            //console.log('\t :: Express :: event update : ' + acc);
+            console.log(acc);
+            var x = parseFloat(acc);
+
+            game.fieldController.getEntities().forEach(function (key, entity) {
+                var body = entity.getBox2DBody();
+                var bodyPosition = body.GetPosition();
+                //var angle = Math.atan2(pos.y - bodyPosition.y, pos.x - bodyPosition.x);
+                var force = x;
+                var impulse = new BOX2D.b2Vec2(0 * force, 1 * force);
+                body.ApplyImpulse(impulse, bodyPosition);
+            }, game);
+        }
+
+        res.end();
+    });
+});
+
