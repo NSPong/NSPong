@@ -40,6 +40,7 @@ require("../input/Keyboard.js");
 require("./DemoBox2DApp.js");
 require("./DemoBox2DConstants.js");
 require("./DemoBox2DEntity.js");
+require("./PaddleEntity.js");
 require("./DemoBox2DServerGame.js");
 
 var game = new DemoBox2D.DemoServerGame();
@@ -75,7 +76,10 @@ nsp.on('endpoint_metadata_changed', function(ep) {
     }
 });
 
-nsp.on('endpoint_subscribed', game.addBoard.bind(game));
+nsp.on('endpoint_subscribed', function(name, uri) {
+    nsp.callEndpoint(name, '/buzz');
+    game.addBoard(name, uri);
+});
 
 // HTTP server for receiving NSP notifications and serving files
 var http_server = express();
@@ -130,7 +134,12 @@ http_server.put('/events', function(req, res, next) {
             var buf = new Buffer(data.notifications[i].payload, 'base64');
             var acc = buf.toString();
             var name = data.notifications[i].ep;
-            acc = parseFloat(acc);
+            try {
+                acc = parseFloat(acc);
+            }
+            catch (err) {
+                continue;
+            }
             game.updatePlayer(name, acc);
 
             /*

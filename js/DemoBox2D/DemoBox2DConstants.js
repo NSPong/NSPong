@@ -26,7 +26,8 @@
 
         ENTITY_TYPES: {
             CIRCLE: 1 << 1,
-            BOX: 1 << 2
+            BOX: 1 << 2,
+            RECT: 1 << 3
         }
     }
 })();

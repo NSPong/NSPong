@@ -54,16 +54,17 @@
 
 
             this.createBox2dWorld();
-            //this._world.DestroyBody(this._wallBottom);
+            this._world.DestroyBody(this._wallBottom);
 
+/*
             var body = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2, DemoBox2D.Constants.ENTITY_BOX_SIZE);
             var bodyPosition = body.GetPosition();
             var angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
             var force = 10;
             var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
             body.ApplyImpulse(impulse, bodyPosition);
+*/
 
-            /*
             for (var i = 0; i < DemoBox2D.Constants.MAX_OBJECTS; i++) {
                 var x = (DemoBox2D.Constants.GAME_WIDTH / 2) + Math.sin(i / 5);
                 var y = i * -DemoBox2D.Constants.ENTITY_BOX_SIZE * 3;
@@ -71,7 +72,7 @@
                 // Make a square or a box
                 if (Math.random() < 0.5) this.createBall(x, y, DemoBox2D.Constants.ENTITY_BOX_SIZE);
                 else this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
-            }*/
+            }
         },
 
         /**
@@ -191,16 +192,15 @@
             var shape = new BOX2D.b2PolygonShape.AsBox(size_x, size_y);
             var fixtureDef = new BOX2D.b2FixtureDef();
             fixtureDef.restitution = 0.1;
-            fixtureDef.density = 1.0;
-            fixtureDef.friction = 1.0;
+            fixtureDef.density = 100.0;
+            fixtureDef.friction = 0.0;
             fixtureDef.shape = shape;
             body.CreateFixture(fixtureDef);
 
             // Create the entity for it in RealTimeMultiplayerNodeJS
-            var aBox2DEntity = new DemoBox2D.Box2DEntity(this.getNextEntityID(), RealtimeMultiplayerGame.Constants.SERVER_SETTING.CLIENT_ID);
+            var aBox2DEntity = new DemoBox2D.PaddleEntity(this.getNextEntityID(), RealtimeMultiplayerGame.Constants.SERVER_SETTING.CLIENT_ID);
             aBox2DEntity.setBox2DBody(body);
-            aBox2DEntity.entityType = DemoBox2D.Constants.ENTITY_TYPES.BOX;
-
+            aBox2DEntity.entityType = DemoBox2D.Constants.ENTITY_TYPES.RECT;
 
             this.fieldController.addEntity(aBox2DEntity);
 
@@ -208,9 +208,13 @@
         },
 
         updatePlayer: function (name, data) {
-            console.log('updatePlayer ' + name);
+            console.log('updatePlayer ' + name + ' : ' + data);
             if (name in this.players) {
-                //this.players[name]
+                var body = this.players[name];
+                var bodyPosition = body.GetPosition();
+                var force = 30;
+                var impulse = new BOX2D.b2Vec2(0, data * force);
+                body.SetLinearVelocity(impulse);
             }
         },
 
@@ -224,15 +228,15 @@
             }
             else if (this.players.length == 1) {
                 console.log('Placing player 2');
-                x = DemoBox2D.Constants.GAME_WIDTH;
+                x = DemoBox2D.Constants.GAME_WIDTH - 0;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
             }
             else {
                 return;
             }
 
-            var body = this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
-            //var body = this.createPaddle(x, y, 0, 10, 40);
+            //var body = this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
+            var body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3);
             this.players[name] = body;
             util.log('Added player with endpoint: '+name);
         },
@@ -285,6 +289,7 @@
          * @inheritDoc
          */
         shouldUpdatePlayer: function (aClientid, data) {
+            var self = this;
             var pos = new BOX2D.b2Vec2(data.payload.x, data.payload.y);
             pos.x /= DemoBox2D.Constants.PHYSICS_SCALE;
             pos.y /= DemoBox2D.Constants.PHYSICS_SCALE;
@@ -299,8 +304,8 @@
 
                 var is_player = false;
 
-                for (name in players) {
-                    if (body == players[name]) {
+                for (name in self.players) {
+                    if (body == self.players[name]) {
                         is_player = true;
                     }
                 }
