@@ -52,7 +52,6 @@
             DemoBox2D.Constants.GAME_HEIGHT /= DemoBox2D.Constants.PHYSICS_SCALE;
             DemoBox2D.Constants.ENTITY_BOX_SIZE /= DemoBox2D.Constants.PHYSICS_SCALE;
 
-
             this.createBox2dWorld();
             this._world.DestroyBody(this._wallBottom);
 
@@ -162,12 +161,11 @@
             fixtureDef.friction = 1.0;
             fixtureDef.shape = shape;
             body.CreateFixture(fixtureDef);
-
+            
             // Create the entity for it in RealTimeMultiplayerNodeJS
             var aBox2DEntity = new DemoBox2D.Box2DEntity(this.getNextEntityID(), RealtimeMultiplayerGame.Constants.SERVER_SETTING.CLIENT_ID);
             aBox2DEntity.setBox2DBody(body);
             aBox2DEntity.entityType = DemoBox2D.Constants.ENTITY_TYPES.BOX;
-
 
             this.fieldController.addEntity(aBox2DEntity);
 
@@ -191,7 +189,7 @@
             var body = this._world.CreateBody(bodyDef);
             var shape = new BOX2D.b2PolygonShape.AsBox(size_x, size_y);
             var fixtureDef = new BOX2D.b2FixtureDef();
-            fixtureDef.restitution = 0.1;
+            fixtureDef.restitution = 1.0;
             fixtureDef.density = 100.0;
             fixtureDef.friction = 0.0;
             fixtureDef.shape = shape;
@@ -218,26 +216,37 @@
             }
         },
 
+        createJoint: function (state) {
+            var jointDef = new BOX2D.b2PrismaticJointDef();
+            jointDef.Initialize(state.bodyA, state.bodyB, state.anchorA, state.axis);
+            jointDef.collideConnected = false;
+            jointDef.enableLimit = false;
+            jointDef.enableMotor = false;
+            return this._world.CreateJoint(jointDef);
+        },
+                
         addBoard: function (name, uri) {
             var x, y;
-
+            // Note! x and y are physics scaled, paddle width = 1
+            // Paddles are now 0.5 paddle widths from the walls
             if (this.players.length == 0) {
                 console.log('Placing player 1');
-                x = 0;
+                x = 0.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
             }
             else if (this.players.length == 1) {
                 console.log('Placing player 2');
-                x = DemoBox2D.Constants.GAME_WIDTH - 0;
+                x = DemoBox2D.Constants.GAME_WIDTH - 1.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
             }
             else {
                 return;
             }
 
-            //var body = this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
             var body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3);
+            var joint = this.createJoint({anchorA: new BOX2D.b2Vec2(x, y), axis: new BOX2D.b2Vec2(0, 1), bodyA: body, bodyB: this._world.GetGroundBody()});
             this.players[name] = body;
+            this.players[name].joint = joint;
             util.log('Added player with endpoint: '+name);
         },
 
@@ -277,12 +286,12 @@
 
         step: function (delta) {
             this._world.ClearForces();
-//			var delta = (typeof delta == "undefined") ? 1/this._fps : delta;
+//          var delta = (typeof delta == "undefined") ? 1/this._fps : delta;
             this._world.Step(delta, delta * this._velocityIterationsPerSecond, delta * this._positionIterationsPerSecond);
         },
 
         shouldAddPlayer: function (aClientid, data) {
-//			this.createPlayerEntity( this.getNextEntityID(), aClientid);
+//          this.createPlayerEntity( this.getNextEntityID(), aClientid);
         },
 
         /**
@@ -317,8 +326,8 @@
         },
 
         shouldRemovePlayer: function (aClientid) {
-//			DemoBox2D.DemoServerGame.superclass.shouldRemovePlayer.call( this, aClientid );
-//			console.log("DEMO::REMOVEPLAYER");
+//          DemoBox2D.DemoServerGame.superclass.shouldRemovePlayer.call( this, aClientid );
+//          console.log("DEMO::REMOVEPLAYER");
         }
     };
 
