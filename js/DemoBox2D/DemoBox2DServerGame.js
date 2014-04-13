@@ -16,41 +16,8 @@
  */
 (function () {
     var util = require('util');
+    var events = require('events');
     var BOX2D = require("./lib/box2d.js");
-    var NSP = require("./lib/nsp.js");
-
-    // Array of player objects
-    var players = [];
-    // Array of endpoint names whiches resource availability has been checked
-    var checked_endpoints = [];
-
-    var nsp = new NSP({
-        host: 'localhost',
-        port: 8080,
-        username: 'admin',
-        password: 'secret',
-        domain: 'domain',
-        push_url: 'http://localhost:4004/events'
-    });
-
-    setInterval(function(){
-        if (!nsp.push_url_set) {
-            nsp.setNotificationPushURL();
-        }
-        nsp.updateEndpoints();
-        util.log('Endpoints:');
-        util.log(util.inspect(nsp.endpoints, {depth: null}));
-    }, 5000);
-
-    nsp.on('endpoint_metadata_changed', function(ep) {
-        for (var i in ep.meta) {
-            var resource = ep.meta[i];
-            if (resource.uri == '/acc') {
-                nsp.subscribeEndpoint(ep.name, resource.uri);
-                nsp.callEndpoint(ep.name, resource.uri, 'y');
-            }
-        }
-    });
 
     DemoBox2D.DemoServerGame = function () {
         DemoBox2D.DemoServerGame.superclass.constructor.call(this);
@@ -64,6 +31,7 @@
         _world: null,
         _velocityIterationsPerSecond: 100,
         _positionIterationsPerSecond: 300,
+        players: [],
 
         /**
          * Map RealtimeMultiplayerGame.Constants.CMDS to functions
@@ -86,8 +54,16 @@
 
 
             this.createBox2dWorld();
-            this._world.DestroyBody(this._wallBottom);
+            //this._world.DestroyBody(this._wallBottom);
 
+            var body = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2, DemoBox2D.Constants.ENTITY_BOX_SIZE);
+            var bodyPosition = body.GetPosition();
+            var angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
+            var force = 10;
+            var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
+            body.ApplyImpulse(impulse, bodyPosition);
+
+            /*
             for (var i = 0; i < DemoBox2D.Constants.MAX_OBJECTS; i++) {
                 var x = (DemoBox2D.Constants.GAME_WIDTH / 2) + Math.sin(i / 5);
                 var y = i * -DemoBox2D.Constants.ENTITY_BOX_SIZE * 3;
@@ -95,14 +71,14 @@
                 // Make a square or a box
                 if (Math.random() < 0.5) this.createBall(x, y, DemoBox2D.Constants.ENTITY_BOX_SIZE);
                 else this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
-            }
+            }*/
         },
 
         /**
          * Creates the Box2D world with 4 walls around the edges
          */
         createBox2dWorld: function () {
-            var m_world = new BOX2D.b2World(new BOX2D.b2Vec2(0, 10), true);
+            var m_world = new BOX2D.b2World(new BOX2D.b2Vec2(0, 0), true);
             m_world.SetWarmStarting(true);
 
             // Create border of boxes
@@ -125,7 +101,7 @@
             this._wallTop = m_world.CreateBody(wallBd);
             this._wallTop.CreateFixture2(wall);
             // TOP
-            wallBd.position.Set(DemoBox2D.Constants.GAME_WIDTH / 2, 1);
+            wallBd.position.Set(DemoBox2D.Constants.GAME_WIDTH / 2, 0.55);
             wall.SetAsBox(DemoBox2D.Constants.GAME_WIDTH / 2, 1);
             this._wallBottom = m_world.CreateBody(wallBd);
             this._wallBottom.CreateFixture2(wall);
@@ -143,8 +119,8 @@
         createBall: function (x, y, radius) {
             var fixtureDef = new BOX2D.b2FixtureDef();
             fixtureDef.shape = new BOX2D.b2CircleShape(radius);
-            fixtureDef.friction = 0.4;
-            fixtureDef.restitution = 0.6;
+            fixtureDef.friction = 0.0;
+            fixtureDef.restitution = 1.0;
             fixtureDef.density = 1.0;
 
             var ballBd = new BOX2D.b2BodyDef();
@@ -197,6 +173,69 @@
             return body;
         },
 
+        /**
+         * Creates a Box2D square body
+         * @param {Number} x    Body position on X axis
+         * @param {Number} y    Body position on Y axis
+         * @param {Number} rotation    Body rotation
+         * @param {Number} size Body size
+         * @return {b2Body}    A Box2D body
+         */
+        createPaddle: function (x, y, rotation, size_x, size_y) {
+            var bodyDef = new BOX2D.b2BodyDef();
+            bodyDef.type = BOX2D.b2Body.b2_dynamicBody;
+            bodyDef.position.Set(x, y);
+            bodyDef.angle = rotation;
+
+            var body = this._world.CreateBody(bodyDef);
+            var shape = new BOX2D.b2PolygonShape.AsBox(size_x, size_y);
+            var fixtureDef = new BOX2D.b2FixtureDef();
+            fixtureDef.restitution = 0.1;
+            fixtureDef.density = 1.0;
+            fixtureDef.friction = 1.0;
+            fixtureDef.shape = shape;
+            body.CreateFixture(fixtureDef);
+
+            // Create the entity for it in RealTimeMultiplayerNodeJS
+            var aBox2DEntity = new DemoBox2D.Box2DEntity(this.getNextEntityID(), RealtimeMultiplayerGame.Constants.SERVER_SETTING.CLIENT_ID);
+            aBox2DEntity.setBox2DBody(body);
+            aBox2DEntity.entityType = DemoBox2D.Constants.ENTITY_TYPES.BOX;
+
+
+            this.fieldController.addEntity(aBox2DEntity);
+
+            return body;
+        },
+
+        updatePlayer: function (name, data) {
+            console.log('updatePlayer ' + name);
+            if (name in this.players) {
+                //this.players[name]
+            }
+        },
+
+        addBoard: function (name, uri) {
+            var x, y;
+
+            if (this.players.length == 0) {
+                console.log('Placing player 1');
+                x = 0;
+                y = DemoBox2D.Constants.GAME_HEIGHT / 2;
+            }
+            else if (this.players.length == 1) {
+                console.log('Placing player 2');
+                x = DemoBox2D.Constants.GAME_WIDTH;
+                y = DemoBox2D.Constants.GAME_HEIGHT / 2;
+            }
+            else {
+                return;
+            }
+
+            var body = this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
+            //var body = this.createPaddle(x, y, 0, 10, 40);
+            this.players[name] = body;
+            util.log('Added player with endpoint: '+name);
+        },
 
         /**
          * Updates the game
@@ -257,7 +296,18 @@
                 var angle = Math.atan2(pos.y - bodyPosition.y, pos.x - bodyPosition.x);
                 var force = 20;
                 var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
-                body.ApplyImpulse(impulse, bodyPosition);
+
+                var is_player = false;
+
+                for (name in players) {
+                    if (body == players[name]) {
+                        is_player = true;
+                    }
+                }
+
+                if (!is_player) {
+                        body.ApplyImpulse(impulse, bodyPosition);
+                }
             }, this);
         },
 

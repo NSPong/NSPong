@@ -18,6 +18,7 @@ var http = require('http');
 var path = require('path');
 var express = require('express');
 var BOX2D = require("./lib/box2d.js");
+var NSP = require("./lib/nsp.js");
 
 require("../lib/SortedLookupTable.js");
 require("../core/RealtimeMutliplayerGame.js");
@@ -43,6 +44,38 @@ require("./DemoBox2DServerGame.js");
 
 var game = new DemoBox2D.DemoServerGame();
 game.startGameClock();
+
+var nsp = new NSP({
+    host: 'localhost',
+    port: 8080,
+    username: 'admin',
+    password: 'secret',
+    domain: 'domain',
+    push_url: 'http://localhost:4004/events'
+});
+
+setInterval(function(){
+    if (!nsp.push_url_set) {
+        nsp.setNotificationPushURL();
+    }
+    nsp.updateEndpoints();
+    util.log('Endpoints:');
+    util.log(util.inspect(nsp.endpoints, {depth: null}));
+}, 5000);
+
+nsp.on('endpoint_metadata_changed', function(ep) {
+    if (game.players.length < 2) {
+        for (var i in ep.meta) {
+            var resource = ep.meta[i];
+            if (resource.uri == '/acc') {
+                nsp.callEndpoint(ep.name, resource.uri, 'y');
+                nsp.subscribeEndpoint(ep.name, resource.uri);
+            }
+        }
+    }
+});
+
+nsp.on('endpoint_subscribed', game.addBoard.bind(game));
 
 // HTTP server for receiving NSP notifications and serving files
 var http_server = express();
@@ -90,24 +123,26 @@ http_server.put('/events', function(req, res, next) {
             return res.end('Error: ' + err.message);
         }
 
-        if ('notifications' in data) {
-            //console.log(data);
-            var buf = new Buffer(data['notifications'][0]['payload'], 'base64');
-            //var acc = parseFloat(buf.toString());
-            var acc = buf.toString();
-            var ep = data['notifications'][0]['ep'];
-            //console.log('\t :: Express :: event update : ' + acc);
-            console.log(acc);
-            var x = parseFloat(acc);
+        //util.log('Express :: event update :');
+        //console.log(util.inspect(data, {depth: null}));
 
+        for (i in data.notifications) {
+            var buf = new Buffer(data.notifications[i].payload, 'base64');
+            var acc = buf.toString();
+            var name = data.notifications[i].ep;
+            acc = parseFloat(acc);
+            game.updatePlayer(name, acc);
+
+            /*
             game.fieldController.getEntities().forEach(function (key, entity) {
                 var body = entity.getBox2DBody();
                 var bodyPosition = body.GetPosition();
                 //var angle = Math.atan2(pos.y - bodyPosition.y, pos.x - bodyPosition.x);
                 var force = x;
                 var impulse = new BOX2D.b2Vec2(0 * force, 1 * force);
-                body.ApplyImpulse(impulse, bodyPosition);
+                //body.ApplyImpulse(impulse, bodyPosition);
             }, game);
+            */
         }
 
         res.end();

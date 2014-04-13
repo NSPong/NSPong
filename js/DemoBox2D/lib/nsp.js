@@ -238,6 +238,7 @@ NSP.prototype.getSubscriptions = function() {
 }
 
 NSP.prototype.subscribeEndpoint = function(name, uri) {
+    var self = this;
     var ep = this.getEndpoint(name);
 
     if (ep && typeof ep.meta !== 'undefined') {
@@ -252,6 +253,8 @@ NSP.prototype.subscribeEndpoint = function(name, uri) {
                 var req = this._NSPHttpReq(options, null, function(body, res){
                     if (res.statusCode == 200) {
                         util.log('Successfully subscribed: '+ep.name+uri);
+                        util.log('endpoint_subscribed emitted');
+                        self.emit('endpoint_subscribed', ep.name, uri);
                     }
                     else {
                         util.log('Subscribing failed for: '+ep.name+uri);
