@@ -119,6 +119,9 @@
         createBall: function (x, y, radius) {
             var fixtureDef = new BOX2D.b2FixtureDef();
             fixtureDef.shape = new BOX2D.b2CircleShape(radius);
+            // Category 0001, collides with everything except hidden paddle
+            fixtureDef.filter.categoryBits = 0x01;
+            fixtureDef.filter.maskBits = 0x07;
             fixtureDef.friction = 0.0;
             fixtureDef.restitution = 1.0;
             fixtureDef.density = 1.0;
@@ -156,6 +159,9 @@
             var body = this._world.CreateBody(bodyDef);
             var shape = new BOX2D.b2PolygonShape.AsBox(size, size);
             var fixtureDef = new BOX2D.b2FixtureDef();
+            // Category 0010, collides with everything except hidden paddle
+            fixtureDef.filter.categoryBits = 0x02;
+            fixtureDef.filter.maskBits = 0x07;
             fixtureDef.restitution = 0.1;
             fixtureDef.density = 1.0;
             fixtureDef.friction = 1.0;
@@ -180,7 +186,7 @@
          * @param {Number} size Body size
          * @return {b2Body}    A Box2D body
          */
-        createPaddle: function (x, y, rotation, size_x, size_y) {
+        createPaddle: function (x, y, rotation, size_x, size_y, hidden) {
             var bodyDef = new BOX2D.b2BodyDef();
             bodyDef.type = BOX2D.b2Body.b2_dynamicBody;
             bodyDef.position.Set(x, y);
@@ -189,6 +195,15 @@
             var body = this._world.CreateBody(bodyDef);
             var shape = new BOX2D.b2PolygonShape.AsBox(size_x, size_y);
             var fixtureDef = new BOX2D.b2FixtureDef();
+            if (hidden) {
+                // Category 1000, collides with nothing
+                fixtureDef.filter.categoryBits = 0x08;
+                fixtureDef.filter.maskBits = 0x00;
+            } else {
+                // Category 0100, collides with everything except hidden paddle
+                fixtureDef.filter.categoryBits = 0x04;
+                fixtureDef.filter.maskBits = 0x07;
+            }
             fixtureDef.restitution = 0.1;
             fixtureDef.density = 100.0;
             fixtureDef.friction = 0.0;
@@ -199,7 +214,9 @@
             var aBox2DEntity = new DemoBox2D.PaddleEntity(this.getNextEntityID(), RealtimeMultiplayerGame.Constants.SERVER_SETTING.CLIENT_ID);
             aBox2DEntity.setBox2DBody(body);
             aBox2DEntity.entityType = DemoBox2D.Constants.ENTITY_TYPES.RECT;
-
+            if (hidden) {
+                aBox2DEntity.hidden = 1;
+            }
             this.fieldController.addEntity(aBox2DEntity);
 
             return body;
@@ -247,13 +264,22 @@
             }
         },
 
-        createJoint: function (state) {
+        createPrismaticJoint: function (state) {
             var jointDef = new BOX2D.b2PrismaticJointDef();
             jointDef.Initialize(state.bodyA, state.bodyB, state.anchorA, state.axis);
             jointDef.collideConnected = false;
             jointDef.enableLimit = false;
             jointDef.enableMotor = false;
             return this._world.CreateJoint(jointDef);
+        },
+
+        createRevoluteJoint: function (state) {
+            var revoluteDef = new BOX2D.b2RevoluteJointDef();
+            revoluteDef.Initialize(state.bodyA, state.bodyB, state.bodyA.GetWorldCenter());
+            revoluteDef.collideConnected = false;
+            revoluteDef.enableLimit = false;
+            revoluteDef.enableMotor = false;
+            return this._world.CreateJoint(revoluteDef);
         },
 
         addBoard: function (name, uri) {
@@ -274,10 +300,16 @@
                 return;
             }
 
-            var body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3);
-            var joint = this.createJoint({anchorA: new BOX2D.b2Vec2(x, y), axis: new BOX2D.b2Vec2(0, 1), bodyA: body, bodyB: this._world.GetGroundBody()});
+            // Creating a paddle and a hidden "paddle" behind it            
+            var body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3, false);
+            var hidden_body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3, true);
+            // Hidden paddle is connected to world body with a prismatic joint
+            var prismatic_joint = this.createPrismaticJoint({anchorA: new BOX2D.b2Vec2(x, y), axis: new BOX2D.b2Vec2(0, 1), bodyA: hidden_body, bodyB: this._world.GetGroundBody()});
+            // Real paddle is connected to the hidden paddle with a revolute joint
+            var revolute_joint = this.createRevoluteJoint({bodyA: hidden_body, bodyB: body});
             this.players[name] = body;
-            this.players[name].joint = joint;
+            this.players[name].prismatic_joint = prismatic_joint;
+            this.players[name].revolute_joint = revolute_joint;
             util.log('Added player with endpoint: '+name);
         },
 
@@ -351,7 +383,7 @@
                 }
 
                 if (!is_player) {
-                        body.ApplyImpulse(impulse, bodyPosition);
+                    body.ApplyImpulse(impulse, bodyPosition);
                 }
             }, this);
         },

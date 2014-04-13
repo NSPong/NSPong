@@ -50,11 +50,10 @@
          * @inheritDoc
          */
         createEntityFromDesc: function (entityDesc) {
-            console.log(entityDesc.entityType, DemoBox2D.Constants.ENTITY_TYPES.BOX);
+            //console.log(entityDesc.entityType, DemoBox2D.Constants.ENTITY_TYPES.BOX);
 
             // Tell CAAT to create a circle or box depending on the info we receive
             var entityType = (entityDesc.entityType === DemoBox2D.Constants.ENTITY_TYPES.BOX || entityDesc.entityType === DemoBox2D.Constants.ENTITY_TYPES.RECT) ? CAAT.ShapeActor.prototype.SHAPE_RECTANGLE : CAAT.ShapeActor.prototype.SHAPE_CIRCLE;
-
 
             // Create a view via CAAT
             var anEntityView = new CAAT.ShapeActor();
@@ -64,6 +63,14 @@
             case DemoBox2D.Constants.ENTITY_TYPES.RECT:
                 // Create the entity
                 var newEntity = new DemoBox2D.PaddleEntity(entityDesc.entityid, entityDesc.clientid);
+                // If entity is hidden, don't draw
+                if (entityDesc.hidden == 1) {
+                    anEntityView.setLocation(entityDesc.x, entityDesc.y); // Place in the center of the screen, use the director's width/height
+                    newEntity.position.set(entityDesc.x, entityDesc.y);
+                    newEntity.setView(anEntityView);
+                    this.fieldController.addEntity(newEntity);
+                    return;
+                }
                 anEntityView.setSize(entityDesc.width * DemoBox2D.Constants.PHYSICS_SCALE, entityDesc.height * DemoBox2D.Constants.PHYSICS_SCALE);
                 break;
             case DemoBox2D.Constants.ENTITY_TYPES.BOX:
@@ -109,6 +116,7 @@
                 entityDescription.width = +entityDescAsArray[5];
                 entityDescription.height = +entityDescAsArray[6];
                 entityDescription.rotation = +entityDescAsArray[7];
+                entityDescription.hidden = +entityDescAsArray[8];
                 break;
             case DemoBox2D.Constants.ENTITY_TYPES.BOX:
             case DemoBox2D.Constants.ENTITY_TYPES.CIRCLE:

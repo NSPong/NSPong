@@ -25,6 +25,7 @@
         width: 1,
         height: 3,
         entityType: DemoBox2D.Constants.ENTITY_TYPES.RECT,
+        hidden: 0,
 
         /**
          * @inheritDoc
@@ -51,7 +52,7 @@
          */
         constructEntityDescription: function () {
             // Send the regular entity description, but also send 'radius width and height' and a rounded version 'rotation'
-            return DemoBox2D.PaddleEntity.superclass.constructEntityDescription.call(this) + ',' + this.width + "," + this.height + "," + ~~(this.rotation * RAD2DEG);
+            return DemoBox2D.PaddleEntity.superclass.constructEntityDescription.call(this) + ',' + this.width + "," + this.height + "," + ~~(this.rotation * RAD2DEG) + "," + this.hidden;
         },
 
         /**
