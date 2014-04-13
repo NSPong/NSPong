@@ -55,6 +55,8 @@ var nsp = new NSP({
     push_url: 'http://localhost:4004/events'
 });
 
+nsp.accel_axis = 'xyz';
+
 setInterval(function(){
     if (!nsp.push_url_set) {
         nsp.setNotificationPushURL();
@@ -69,7 +71,7 @@ nsp.on('endpoint_metadata_changed', function(ep) {
         for (var i in ep.meta) {
             var resource = ep.meta[i];
             if (resource.uri == '/acc') {
-                nsp.callEndpoint(ep.name, resource.uri, 'y');
+                nsp.callEndpoint(ep.name, resource.uri, nsp.accel_axis);
                 nsp.subscribeEndpoint(ep.name, resource.uri);
             }
         }
@@ -130,17 +132,23 @@ http_server.put('/events', function(req, res, next) {
         //util.log('Express :: event update :');
         //console.log(util.inspect(data, {depth: null}));
 
-        for (i in data.notifications) {
+        for (var i in data.notifications) {
             var buf = new Buffer(data.notifications[i].payload, 'base64');
-            var acc = buf.toString();
+            var acc = buf.toString().split(';');
             var name = data.notifications[i].ep;
-            try {
-                acc = parseFloat(acc);
+
+            var accel_data = {};
+            for (var j in acc) {
+                var axis = nsp.accel_axis[j];
+                if (typeof axis !== 'undefined') {
+                    acc[j] = parseFloat(acc[j]);
+                    if (!isNaN(acc[j]))
+                        accel_data[axis] = acc[j];
+                }
             }
-            catch (err) {
-                continue;
-            }
-            game.updatePlayer(name, acc);
+
+            if (Object.keys(accel_data).length > 0)
+                game.updatePlayer(name, accel_data);
 
             /*
             game.fieldController.getEntities().forEach(function (key, entity) {

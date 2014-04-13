@@ -161,7 +161,7 @@
             fixtureDef.friction = 1.0;
             fixtureDef.shape = shape;
             body.CreateFixture(fixtureDef);
-            
+
             // Create the entity for it in RealTimeMultiplayerNodeJS
             var aBox2DEntity = new DemoBox2D.Box2DEntity(this.getNextEntityID(), RealtimeMultiplayerGame.Constants.SERVER_SETTING.CLIENT_ID);
             aBox2DEntity.setBox2DBody(body);
@@ -189,7 +189,7 @@
             var body = this._world.CreateBody(bodyDef);
             var shape = new BOX2D.b2PolygonShape.AsBox(size_x, size_y);
             var fixtureDef = new BOX2D.b2FixtureDef();
-            fixtureDef.restitution = 1.0;
+            fixtureDef.restitution = 0.1;
             fixtureDef.density = 100.0;
             fixtureDef.friction = 0.0;
             fixtureDef.shape = shape;
@@ -206,13 +206,44 @@
         },
 
         updatePlayer: function (name, data) {
-            console.log('updatePlayer ' + name + ' : ' + data);
+            console.log('updatePlayer ' + name + ' : ' + util.inspect(data));
+
             if (name in this.players) {
                 var body = this.players[name];
-                var bodyPosition = body.GetPosition();
-                var force = 30;
-                var impulse = new BOX2D.b2Vec2(0, data * force);
-                body.SetLinearVelocity(impulse);
+                var velocity = body.GetLinearVelocity();
+
+                for (var axis in data) {
+                    var acc = data[axis];
+
+                    if (axis == 'x') {
+                        var force = 10;
+                        var angle = body.GetAngle();
+
+                        if (angle > Math.PI / 4) {
+                            body.SetAngle(Math.PI / 4);
+                            body.SetAngularVelocity(0);
+                        }
+                        else if (angle < -Math.PI / 4) {
+                            body.SetAngle(-Math.PI / 4);
+                            body.SetAngularVelocity(0);
+                        }
+                        else {
+                            body.SetAngularVelocity(acc * force);
+                        }
+                    }
+                    else if (axis == 'y') {
+                        var force = 10;
+                        velocity.y += acc * force;
+                    }
+                    else if (axis == 'z') {
+                        var force = 0.5;
+                        velocity.x += (acc-1) * force;
+                    }
+                }
+
+                if ('y' in data || 'x' in data) {
+                    body.SetLinearVelocity(velocity);
+                }
             }
         },
 
@@ -224,7 +255,7 @@
             jointDef.enableMotor = false;
             return this._world.CreateJoint(jointDef);
         },
-                
+
         addBoard: function (name, uri) {
             var x, y;
             // Note! x and y are physics scaled, paddle width = 1
