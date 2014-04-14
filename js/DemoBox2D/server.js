@@ -55,7 +55,7 @@ var nsp = new NSP({
     push_url: 'http://localhost:4004/events'
 });
 
-nsp.accel_axis = 'xyz';
+nsp.accel_axis = 'xy';
 
 setInterval(function(){
     if (!nsp.push_url_set) {
@@ -81,6 +81,10 @@ nsp.on('endpoint_metadata_changed', function(ep) {
 nsp.on('endpoint_subscribed', function(name, uri) {
     nsp.callEndpoint(name, '/buzz');
     game.addBoard(name, uri);
+});
+
+game.emitter.on('buzz_paddle', function(name) {
+    setTimeout(function(){nsp.callEndpoint(name, '/buzz')}, 500);
 });
 
 // HTTP server for receiving NSP notifications and serving files

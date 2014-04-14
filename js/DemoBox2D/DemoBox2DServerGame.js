@@ -32,6 +32,8 @@
         _velocityIterationsPerSecond: 100,
         _positionIterationsPerSecond: 300,
         players: {},
+        acc_buf: [0, 0],
+        emitter: new events.EventEmitter(),
 
         /**
          * Map RealtimeMultiplayerGame.Constants.CMDS to functions
@@ -53,17 +55,16 @@
             DemoBox2D.Constants.ENTITY_BOX_SIZE /= DemoBox2D.Constants.PHYSICS_SCALE;
 
             this.createBox2dWorld();
-            this._world.DestroyBody(this._wallBottom);
+//            this._world.DestroyBody(this._wallTop);
 
-/*
             var body = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2, DemoBox2D.Constants.ENTITY_BOX_SIZE);
             var bodyPosition = body.GetPosition();
             var angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
             var force = 10;
             var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
             body.ApplyImpulse(impulse, bodyPosition);
-*/
 
+/*
             for (var i = 0; i < DemoBox2D.Constants.MAX_OBJECTS; i++) {
                 var x = (DemoBox2D.Constants.GAME_WIDTH / 2) + Math.sin(i / 5);
                 var y = i * -DemoBox2D.Constants.ENTITY_BOX_SIZE * 3;
@@ -72,13 +73,36 @@
                 if (Math.random() < 0.5) this.createBall(x, y, DemoBox2D.Constants.ENTITY_BOX_SIZE);
                 else this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
             }
+*/
         },
 
         /**
          * Creates the Box2D world with 4 walls around the edges
          */
         createBox2dWorld: function () {
+            var self = this;
             var m_world = new BOX2D.b2World(new BOX2D.b2Vec2(0, 0), true);
+            var cl = new BOX2D.b2ContactListener();
+            cl.BeginContact = function(contact) {
+                var a_c = contact.m_fixtureA.m_filter.categoryBits;
+                var a_b = contact.m_fixtureA.m_body;
+                var b_c = contact.m_fixtureB.m_filter.categoryBits;
+                var b_b = contact.m_fixtureB.m_body;
+
+                console.log(util.inspect(a_c, {depth:0}), util.inspect(b_c, {depth:0}));
+//                console.log(util.inspect(contact, {depth: 0}));
+
+                if ((a_c == 0x08 && b_c == 0x04) || (a_c == 0x04 && b_c == 0x08)) {
+                    for (var name in self.players) {
+                        if (self.players[name].body == a_b || self.players[name].body == b_b) {
+                            self.emitter.emit('buzz_paddle', name);
+                            util.log('buzz_paddle emitted: ' + name);
+                            break;
+                        }
+                    }
+                }
+            };
+            m_world.SetContactListener(cl);
             m_world.SetWarmStarting(true);
 
             // Create border of boxes
@@ -98,13 +122,13 @@
             // BOTTOM
             wallBd.position.Set(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT + 0.55);
             wall.SetAsBox(DemoBox2D.Constants.GAME_WIDTH / 2, 1);
-            this._wallTop = m_world.CreateBody(wallBd);
-            this._wallTop.CreateFixture2(wall);
-            // TOP
-            wallBd.position.Set(DemoBox2D.Constants.GAME_WIDTH / 2, 0.55);
-            wall.SetAsBox(DemoBox2D.Constants.GAME_WIDTH / 2, 1);
             this._wallBottom = m_world.CreateBody(wallBd);
             this._wallBottom.CreateFixture2(wall);
+            // TOP
+            wallBd.position.Set(DemoBox2D.Constants.GAME_WIDTH / 2, -1.5);
+            wall.SetAsBox(DemoBox2D.Constants.GAME_WIDTH / 2, 1);
+            this._wallTop = m_world.CreateBody(wallBd);
+            this._wallTop.CreateFixture2(wall);
 
             this._world = m_world;
         },
@@ -120,10 +144,10 @@
             var fixtureDef = new BOX2D.b2FixtureDef();
             fixtureDef.shape = new BOX2D.b2CircleShape(radius);
             // Category 0001, collides with everything except hidden paddle
-            fixtureDef.filter.categoryBits = 0x01;
-            fixtureDef.filter.maskBits = 0x07;
+            fixtureDef.filter.categoryBits = 0x08;
+            fixtureDef.filter.maskBits = 0x0f;
             fixtureDef.friction = 0.0;
-            fixtureDef.restitution = 1.0;
+            fixtureDef.restitution = 1.005;
             fixtureDef.density = 1.0;
 
             var ballBd = new BOX2D.b2BodyDef();
@@ -161,7 +185,7 @@
             var fixtureDef = new BOX2D.b2FixtureDef();
             // Category 0010, collides with everything except hidden paddle
             fixtureDef.filter.categoryBits = 0x02;
-            fixtureDef.filter.maskBits = 0x07;
+            fixtureDef.filter.maskBits = 0x0f;
             fixtureDef.restitution = 0.1;
             fixtureDef.density = 1.0;
             fixtureDef.friction = 1.0;
@@ -197,12 +221,12 @@
             var fixtureDef = new BOX2D.b2FixtureDef();
             if (hidden) {
                 // Category 1000, collides with nothing
-                fixtureDef.filter.categoryBits = 0x08;
+                fixtureDef.filter.categoryBits = 0xff;
                 fixtureDef.filter.maskBits = 0x00;
             } else {
                 // Category 0100, collides with everything except hidden paddle
                 fixtureDef.filter.categoryBits = 0x04;
-                fixtureDef.filter.maskBits = 0x07;
+                fixtureDef.filter.maskBits = 0x0f;
             }
             fixtureDef.restitution = 0.1;
             fixtureDef.density = 100.0;
@@ -223,11 +247,13 @@
         },
 
         updatePlayer: function (name, data) {
-            console.log('updatePlayer ' + name + ' : ' + util.inspect(data));
+            //console.log('updatePlayer ' + name + ' : ' + util.inspect(data));
 
             if (name in this.players) {
-                var body = this.players[name];
+                var body = this.players[name].body;
+                var is_left = this.players[name].left;
                 var velocity = body.GetLinearVelocity();
+                var position = body.GetPosition();
 
                 for (var axis in data) {
                     var acc = data[axis];
@@ -245,12 +271,16 @@
                             body.SetAngularVelocity(0);
                         }
                         else {
-                            body.SetAngularVelocity(acc * force);
+                            //body.SetAngularVelocity(acc * force);
+                            body.SetAngularVelocity(0);
+                            body.SetAngle((is_left ? 1 : -1) * acc * Math.PI/4);
                         }
                     }
                     else if (axis == 'y') {
                         var force = 10;
                         velocity.y += acc * force;
+                        if (acc <= -0.1 || acc >= 0.1)
+                            position.y = ((is_left ? -1 : 1) * acc+1)/2 * DemoBox2D.Constants.GAME_HEIGHT;
                     }
                     else if (axis == 'z') {
                         var force = 0.5;
@@ -259,7 +289,9 @@
                 }
 
                 if ('y' in data || 'x' in data) {
-                    body.SetLinearVelocity(velocity);
+                    //body.SetLinearVelocity(velocity);
+                    body.SetLinearVelocity(new BOX2D.b2Vec2(0, 0));
+                    body.SetPosition(position);
                 }
             }
         },
@@ -307,7 +339,9 @@
             var prismatic_joint = this.createPrismaticJoint({anchorA: new BOX2D.b2Vec2(x, y), axis: new BOX2D.b2Vec2(0, 1), bodyA: hidden_body, bodyB: this._world.GetGroundBody()});
             // Real paddle is connected to the hidden paddle with a revolute joint
             var revolute_joint = this.createRevoluteJoint({bodyA: hidden_body, bodyB: body});
-            this.players[name] = body;
+            this.players[name] = {};
+            this.players[name].left = Object.keys(this.players).length == 1;
+            this.players[name].body = body;
             this.players[name].prismatic_joint = prismatic_joint;
             this.players[name].revolute_joint = revolute_joint;
             util.log('Added player with endpoint: '+name);
@@ -377,7 +411,7 @@
                 var is_player = false;
 
                 for (name in self.players) {
-                    if (body == self.players[name]) {
+                    if (body == self.players[name].body) {
                         is_player = true;
                     }
                 }
