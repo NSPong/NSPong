@@ -45,7 +45,7 @@ module.exports = NSP;
 
 var g_request_number = 1;
 
-NSP.prototype._NSPHttpReq = function(options, body, callback) {
+NSP.prototype._NSPHttpReq = function(options, body, callback, args) {
     if (typeof options === 'undefined') options = {};
     var self = this;
     var request_number = g_request_number++;
@@ -100,7 +100,7 @@ NSP.prototype._NSPHttpReq = function(options, body, callback) {
                 util.log('NSP authentication failed!');
             }
             else {
-                callback(received_body, res);
+                callback(received_body, res, args);
             }
         });
     });
@@ -208,7 +208,7 @@ NSP.prototype.updateEndpointMetadata = function() {
                 }
             };
 
-            var req = self._NSPHttpReq(options, null, function(body) {
+            var req = self._NSPHttpReq(options, null, function(body, res, endpoint) {
                 try {
                     var data = JSON.parse(body);
                 }
@@ -217,11 +217,11 @@ NSP.prototype.updateEndpointMetadata = function() {
                     return;
                 }
 
-                ep.meta = data;
+                endpoint.meta = data;
 
                 util.log('endpoint_metadata_changed emitted');
-                self.emit('endpoint_metadata_changed', ep);
-            });
+                self.emit('endpoint_metadata_changed', endpoint);
+            }, ep);
         }
     }
 }

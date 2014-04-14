@@ -67,7 +67,7 @@ setInterval(function(){
 }, 5000);
 
 nsp.on('endpoint_metadata_changed', function(ep) {
-    if (game.players.length < 2) {
+    if (Object.keys(game.players).length <= 2) {
         for (var i in ep.meta) {
             var resource = ep.meta[i];
             if (resource.uri == '/acc') {

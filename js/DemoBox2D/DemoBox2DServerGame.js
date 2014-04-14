@@ -31,7 +31,7 @@
         _world: null,
         _velocityIterationsPerSecond: 100,
         _positionIterationsPerSecond: 300,
-        players: [],
+        players: {},
 
         /**
          * Map RealtimeMultiplayerGame.Constants.CMDS to functions
@@ -286,12 +286,12 @@
             var x, y;
             // Note! x and y are physics scaled, paddle width = 1
             // Paddles are now 0.5 paddle widths from the walls
-            if (this.players.length == 0) {
+            if (Object.keys(this.players).length == 0) {
                 console.log('Placing player 1');
                 x = 0.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
             }
-            else if (this.players.length == 1) {
+            else if (Object.keys(this.players).length == 1) {
                 console.log('Placing player 2');
                 x = DemoBox2D.Constants.GAME_WIDTH - 1.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
