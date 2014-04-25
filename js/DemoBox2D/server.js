@@ -84,7 +84,13 @@ nsp.on('endpoint_subscribed', function(name, uri) {
 });
 
 game.emitter.on('buzz_paddle', function(name) {
-    setTimeout(function(){nsp.callEndpoint(name, '/buzz')}, 500);
+    nsp.callEndpoint(name, '/buzz');
+    //1, 2, 3, 4 string values allowed
+    nsp.callEndpoint(name, '/led', '2');
+});
+
+game.emitter.on('player_added', function(name, playernumber) {
+    nsp.callEndpoint(name, '/lcd', playernumber);
 });
 
 // HTTP server for receiving NSP notifications and serving files

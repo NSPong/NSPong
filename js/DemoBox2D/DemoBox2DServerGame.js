@@ -315,15 +315,18 @@
         },
 
         addBoard: function (name, uri) {
+            var self = this;
             var x, y;
             // Note! x and y are physics scaled, paddle width = 1
             // Paddles are now 0.5 paddle widths from the walls
             if (Object.keys(this.players).length == 0) {
+                self.emitter.emit('player_added', name, '1');
                 console.log('Placing player 1');
                 x = 0.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
             }
             else if (Object.keys(this.players).length == 1) {
+                self.emitter.emit('player_added', name, '2');
                 console.log('Placing player 2');
                 x = DemoBox2D.Constants.GAME_WIDTH - 1.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
