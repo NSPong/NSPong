@@ -89,6 +89,11 @@ game.emitter.on('buzz_paddle', function(name) {
     nsp.callEndpoint(name, '/led', '2');
 });
 
+game.emitter.on('player_scored', function(name) {
+    console.log(name + ' scored!');
+    nsp.callEndpoint(name, '/led', '4');
+});
+
 game.emitter.on('player_added', function(name, playernumber) {
     nsp.callEndpoint(name, '/lcd', playernumber);
 });

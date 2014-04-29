@@ -32,6 +32,7 @@
         _velocityIterationsPerSecond: 100,
         _positionIterationsPerSecond: 300,
         players: {},
+        game: {},
         acc_buf: [0, 0],
         emitter: new events.EventEmitter(),
 
@@ -43,6 +44,27 @@
         setupCmdMap: function () {
             DemoBox2D.DemoServerGame.superclass.setupCmdMap.call(this);
             this.cmdMap[RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE] = this.shouldUpdatePlayer;
+        },
+
+        resetGame: function(reset_score) {
+            if (reset_score) {
+                for (var name in this.players) {
+                    this.players[name].score = 0;
+                }
+            }
+
+            var bodyPosition = new BOX2D.b2Vec2(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2);
+            this.ball.SetLinearVelocity(new BOX2D.b2Vec2(0, 0));
+            this.ball.SetPosition(bodyPosition);
+
+            var angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
+/* TODO:
+            while (angle) {
+                angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
+            }*/
+            var force = 10;
+            var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
+            setTimeout(function(){this.ball.ApplyImpulse(impulse, bodyPosition);}.bind(this), 2000);
         },
 
         /**
@@ -57,12 +79,7 @@
             this.createBox2dWorld();
 //            this._world.DestroyBody(this._wallTop);
 
-            var body = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2, DemoBox2D.Constants.ENTITY_BOX_SIZE);
-            var bodyPosition = body.GetPosition();
-            var angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
-            var force = 10;
-            var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
-            body.ApplyImpulse(impulse, bodyPosition);
+            this.ball = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2, DemoBox2D.Constants.ENTITY_BOX_SIZE);
 
 /*
             for (var i = 0; i < DemoBox2D.Constants.MAX_OBJECTS; i++) {
@@ -89,7 +106,7 @@
                 var b_c = contact.m_fixtureB.m_filter.categoryBits;
                 var b_b = contact.m_fixtureB.m_body;
 
-                console.log(util.inspect(a_c, {depth:0}), util.inspect(b_c, {depth:0}));
+//                console.log(util.inspect(a_c, {depth:0}), util.inspect(b_c, {depth:0}));
 //                console.log(util.inspect(contact, {depth: 0}));
 
                 if ((a_c == 0x08 && b_c == 0x04) || (a_c == 0x04 && b_c == 0x08)) {
@@ -98,6 +115,28 @@
                             self.emitter.emit('buzz_paddle', name);
                             util.log('buzz_paddle emitted: ' + name);
                             break;
+                        }
+                    }
+                }
+                else if ((a_c == 0x01 && b_c == 0x08) || (a_c == 0x08 && b_c == 0x01)) {
+                    if (a_b == self._wallLeft || b_b == self._wallLeft) {
+                        for (var name in self.players) {
+                            if (!self.players[name].left) {
+                                self.players[name].score++;
+                                self.emitter.emit('player_scored', name);
+                                setTimeout(self.resetGame.bind(self), 10);
+                                break;
+                            }
+                        }
+                    }
+                    else if (a_b == self._wallRight || b_b == self._wallRight) {
+                        for (var name in self.players) {
+                            if (self.players[name].left) {
+                                self.players[name].score++;
+                                self.emitter.emit('player_scored', name);
+                                setTimeout(self.resetGame.bind(self), 10);
+                                break;
+                            }
                         }
                     }
                 }
@@ -254,6 +293,8 @@
                 var is_left = this.players[name].left;
                 var velocity = body.GetLinearVelocity();
                 var position = body.GetPosition();
+                var new_position = new BOX2D.b2Vec2(position.x, position.y);
+                var angle = body.GetAngle();
 
                 for (var axis in data) {
                     var acc = data[axis];
@@ -273,14 +314,16 @@
                         else {
                             //body.SetAngularVelocity(acc * force);
                             body.SetAngularVelocity(0);
-                            body.SetAngle((is_left ? 1 : -1) * acc * Math.PI/4);
+                            var new_angle = (is_left ? 1 : -1) * acc * Math.PI/4;
+                            var d = new_angle - angle;
+                            if (Math.abs(d) > 0.1)
+                                body.SetAngle(new_angle);
                         }
                     }
                     else if (axis == 'y') {
                         var force = 10;
                         velocity.y += acc * force;
-                        if (acc <= -0.1 || acc >= 0.1)
-                            position.y = ((is_left ? -1 : 1) * acc+1)/2 * DemoBox2D.Constants.GAME_HEIGHT;
+                        new_position.y = (((is_left ? -1 : 1) * acc+1)/2 * DemoBox2D.Constants.GAME_HEIGHT + position.y) / 2;
                     }
                     else if (axis == 'z') {
                         var force = 0.5;
@@ -291,7 +334,9 @@
                 if ('y' in data || 'x' in data) {
                     //body.SetLinearVelocity(velocity);
                     body.SetLinearVelocity(new BOX2D.b2Vec2(0, 0));
-                    body.SetPosition(position);
+                    var d = new_position.y - position.y;
+                    if (Math.abs(d) > 0.3)
+                        body.SetPosition(new_position);
                 }
             }
         },
@@ -324,6 +369,7 @@
                 console.log('Placing player 1');
                 x = 0.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
+                self.resetGame();
             }
             else if (Object.keys(this.players).length == 1) {
                 self.emitter.emit('player_added', name, '2');
@@ -343,6 +389,7 @@
             // Real paddle is connected to the hidden paddle with a revolute joint
             var revolute_joint = this.createRevoluteJoint({bodyA: hidden_body, bodyB: body});
             this.players[name] = {};
+            this.players[name].score = 0;
             this.players[name].left = Object.keys(this.players).length == 1;
             this.players[name].body = body;
             this.players[name].prismatic_joint = prismatic_joint;
@@ -420,9 +467,11 @@
                 }
 
                 if (!is_player) {
-                    body.ApplyImpulse(impulse, bodyPosition);
+                    //body.ApplyImpulse(impulse, bodyPosition);
                 }
             }, this);
+
+            this.resetGame();
         },
 
         shouldRemovePlayer: function (aClientid) {
