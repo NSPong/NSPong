@@ -91,11 +91,12 @@ game.emitter.on('buzz_paddle', function(name) {
 
 game.emitter.on('player_scored', function(name) {
     console.log(name + ' scored!');
-    nsp.callEndpoint(name, '/led', '4');
+    nsp.callEndpoint(name, '/led', 'score');
 });
 
 game.emitter.on('player_added', function(name, playernumber) {
     nsp.callEndpoint(name, '/lcd', playernumber);
+    nsp.callEndpoint(name, '/led', 'reset');
 });
 
 // HTTP server for receiving NSP notifications and serving files
