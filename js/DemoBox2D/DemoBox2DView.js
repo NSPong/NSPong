@@ -42,7 +42,26 @@
 
             // Create the director instance, and immediately add the scene once it's created
             this.caatDirector = new CAAT.Director().initialize(DemoBox2D.Constants.GAME_WIDTH, DemoBox2D.Constants.GAME_HEIGHT);
-            this.caatDirector.addScene(this.caatScene); //
+            this.caatDirector.addScene(this.caatScene);
+
+            // Add ground lines and center circle
+            var path = new CAAT.Path()
+                .beginPath(DemoBox2D.Constants.GAME_WIDTH/2, 0)
+                .addLineTo(DemoBox2D.Constants.GAME_WIDTH/2, DemoBox2D.Constants.GAME_HEIGHT, '#88bb88')
+                .endPath();
+            var line = new CAAT.PathActor()
+                .create()
+                .setPath(path);
+            this.caatScene.addChild(line);
+
+            var size = 100;
+            var circle = new CAAT.ShapeActor()
+                .create()
+                .setLocation(DemoBox2D.Constants.GAME_WIDTH/2 - size/2, DemoBox2D.Constants.GAME_HEIGHT/2 - size/2)
+                .setSize(size, size)
+                .setFillStyle('#000000')
+                .setStrokeStyle('#aaaaaa');
+            this.caatScene.addChild(circle);
         },
 
         /**

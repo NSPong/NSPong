@@ -35,6 +35,7 @@
         game: {},
         acc_buf: [0, 0],
         emitter: new events.EventEmitter(),
+        wd_timer: null,
 
         /**
          * Map RealtimeMultiplayerGame.Constants.CMDS to functions
@@ -47,13 +48,16 @@
         },
 
         resetGame: function(reset_score) {
+            util.log('Game reset');
+
             if (reset_score) {
                 for (var name in this.players) {
                     this.players[name].score = 0;
                 }
             }
 
-            var bodyPosition = new BOX2D.b2Vec2(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2);
+            var bodyPosition = new BOX2D.b2Vec2(DemoBox2D.Constants.GAME_WIDTH / 2 - DemoBox2D.Constants.ENTITY_BOX_SIZE,
+                                                DemoBox2D.Constants.GAME_HEIGHT / 2 - DemoBox2D.Constants.ENTITY_BOX_SIZE);
             this.ball.SetLinearVelocity(new BOX2D.b2Vec2(0, 0));
             this.ball.SetPosition(bodyPosition);
 
@@ -65,6 +69,7 @@
             var force = 10;
             var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
             setTimeout(function(){this.ball.ApplyImpulse(impulse, bodyPosition);}.bind(this), 2000);
+            this.resetWatchdog();
         },
 
         /**
@@ -79,7 +84,9 @@
             this.createBox2dWorld();
 //            this._world.DestroyBody(this._wallTop);
 
-            this.ball = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2, DemoBox2D.Constants.GAME_HEIGHT / 2, DemoBox2D.Constants.ENTITY_BOX_SIZE);
+            this.ball = this.createBall(DemoBox2D.Constants.GAME_WIDTH / 2 - DemoBox2D.Constants.ENTITY_BOX_SIZE,
+                                        DemoBox2D.Constants.GAME_HEIGHT / 2 - DemoBox2D.Constants.ENTITY_BOX_SIZE,
+                                        DemoBox2D.Constants.ENTITY_BOX_SIZE);
 
 /*
             for (var i = 0; i < DemoBox2D.Constants.MAX_OBJECTS; i++) {
@@ -91,6 +98,14 @@
                 else this.createBox(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE);
             }
 */
+        },
+
+        /**
+         * Resets the ball position to middle when no paddle hits have occurred in some time.
+         */
+        resetWatchdog: function() {
+            clearTimeout(this.wd_timer);
+            this.wd_timer = setTimeout(this.resetGame.bind(this), 20000);
         },
 
         /**
@@ -114,6 +129,7 @@
                         if (self.players[name].body == a_b || self.players[name].body == b_b) {
                             self.emitter.emit('buzz_paddle', name);
                             util.log('buzz_paddle emitted: ' + name);
+                            self.resetWatchdog();
                             break;
                         }
                     }

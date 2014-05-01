@@ -9,6 +9,7 @@
 
 body{
 	font-family:Helvetica, Helvetica Neue, Arial, sans-serif;
+	background: black;
 }
 
 a, a:active, a:visited { color: #1c1c1c; }
@@ -20,13 +21,13 @@ a:hover { color: #333333; }
 }
 
 #header-container{
-	background-color: #333333;
+/*	background-color: #333333;*/
 	height:130px;
-	border-bottom:20px solid #9dfafa;
+/*	border-bottom:0px solid #9dfafa;*/
 	margin-bottom:50px;
-	-webkit-box-shadow:0 40px 40px -40px #AAA;
-	   -moz-box-shadow:0 40px 40px -40px #AAA;
-	        box-shadow:0 40px 40px -40px #AAA;
+	-webkit-box-shadow:0 40px 40px -40px #9dfafa;
+	   -moz-box-shadow:0 40px 40px -40px #9dfafa;
+	        box-shadow:0 40px 40px -40px #9dfafa;
 }
 
 #title{
@@ -44,30 +45,11 @@ h3{
 	font-size: 20px;
 }
 
-nav{
-	float:right;
-	margin-right: -52px;
-	margin-top:100px;
-}
-
-nav ul, nav ul li{
-	display:inline;
-}
-
-nav a{
-	padding:20px;
-	text-decoration:none;
-	background-color: #9dfafa;
-}
-
 aside{
 	color:white;
 	padding:10px;
-	float:right;
-	height:500px;
-	width:250px;
-	background-color: #333333;
-	border-bottom:20px solid #333333;
+/*	background-color: #333333;
+	border-bottom:20px solid #333333;*/
 	margin-bottom:50px;
 	margin-right:-50px;
 	overflow:hidden;
@@ -99,14 +81,35 @@ article header{
 }
 */
 
+#gamecontainer {
+	padding-left: 0;
+	padding-right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+	width: 800px;
+	-webkit-box-shadow: -40px 0 60px -40px red, /* L */
+						 40px 0 60px -40px red, /* R */
+						0 -40px 60px -40px blue,/* T */
+						0  40px 60px -40px blue;/* B */
+	   -moz-box-shadow: -40px 0 60px -40px red, /* L */
+						 40px 0 60px -40px red, /* R */
+						0 -40px 60px -40px blue,/* T */
+						0  40px 60px -40px blue;/* B */
+	        box-shadow: -40px 0 60px -40px red, /* L */
+						 40px 0 60px -40px red, /* R */
+						0 -40px 60px -40px blue,/* T */
+						0  40px 60px -40px blue;/* B */
+}
+
 #footer-container{
-	background-color: #333333;
+	background-color: black;
 	height:240px;
-	border-top:20px solid #9dfafa;
+	/*border-top:20px solid #9dfafa;*/
 	margin-top:50px;
-	-webkit-box-shadow:0 -40px 40px -40px #AAA;
-	   -moz-box-shadow:0 -40px 40px -40px #AAA;
-	        box-shadow:0 -40px 40px -40px #AAA;
+	-webkit-box-shadow:0 -40px 40px -40px #9dfafa;
+	   -moz-box-shadow:0 -40px 40px -40px #9dfafa;
+	        box-shadow:0 -40px 40px -40px #9dfafa;
 }
 
 #footer-container footer{
@@ -127,9 +130,3 @@ article header{
 #jquery-test{
 	top:45px;
 }
-
-
-
-
-
-
