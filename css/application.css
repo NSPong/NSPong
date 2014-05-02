@@ -81,6 +81,14 @@ article header{
 }
 */
 
+#logo {
+	width: 185px;
+	height: 115px;
+	float: right;
+	margin-top: 15px;
+	margin-right: 80px;
+}
+
 #gamecontainer {
 	padding-left: 0;
 	padding-right: 0;
@@ -88,6 +96,7 @@ article header{
 	margin-right: auto;
 	display: block;
 	width: 800px;
+	height: 450px;
 	-webkit-box-shadow: -40px 0 60px -40px red, /* L */
 						 40px 0 60px -40px red, /* R */
 						0 -40px 60px -40px blue,/* T */

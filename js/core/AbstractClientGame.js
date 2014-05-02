@@ -203,6 +203,13 @@
 
                 // Update the entity with the new information, and insert it into the activeEntities array
                 this.fieldController.updateEntity(entityid, newPosition, newRotation, entityDesc);
+
+                if (typeof(entityDesc.score) !== 'undefined' && entityDesc.hidden != 1) {
+                    var i = entityDesc.x < 200 ? 0 : 1;
+                    var score = this.fieldController.view.scores[i];
+                    score.setText(""+entityDesc.score);
+                }
+
                 activeEntities[entityid] = true;
 
             }, this);

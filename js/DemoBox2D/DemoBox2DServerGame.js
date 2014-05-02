@@ -52,7 +52,11 @@
 
             if (reset_score) {
                 for (var name in this.players) {
-                    this.players[name].score = 0;
+                    this.fieldController.getEntities().forEach(function (key, entity) {
+                        if (entity.entityType == DemoBox2D.Constants.ENTITY_TYPES.RECT) {
+                            entity.score = 0;
+                        }
+                    });
                 }
             }
 
@@ -61,11 +65,8 @@
             this.ball.SetLinearVelocity(new BOX2D.b2Vec2(0, 0));
             this.ball.SetPosition(bodyPosition);
 
-            var angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
-/* TODO:
-            while (angle) {
-                angle = Math.atan2(Math.random() * DemoBox2D.Constants.GAME_WIDTH, Math.random() * DemoBox2D.Constants.GAME_HEIGHT);
-            }*/
+            var angle = Math.random() * Math.PI/2 - Math.PI/4;
+            angle += Math.random() > 0.5 ? 0 : Math.PI;
             var force = 10;
             var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
             setTimeout(function(){this.ball.ApplyImpulse(impulse, bodyPosition);}.bind(this), 2000);
@@ -138,7 +139,12 @@
                     if (a_b == self._wallLeft || b_b == self._wallLeft) {
                         for (var name in self.players) {
                             if (!self.players[name].left) {
-                                self.players[name].score++;
+                                self.fieldController.getEntities().forEach(function (key, entity) {
+                                    var body = entity.getBox2DBody();
+                                    if (body == self.players[name].body) {
+                                        entity.score++;
+                                    }
+                                });
                                 self.emitter.emit('player_scored', name);
                                 setTimeout(self.resetGame.bind(self), 10);
                                 break;
@@ -148,7 +154,12 @@
                     else if (a_b == self._wallRight || b_b == self._wallRight) {
                         for (var name in self.players) {
                             if (self.players[name].left) {
-                                self.players[name].score++;
+                                self.fieldController.getEntities().forEach(function (key, entity) {
+                                    var body = entity.getBox2DBody();
+                                    if (body == self.players[name].body) {
+                                        entity.score++;
+                                    }
+                                });
                                 self.emitter.emit('player_scored', name);
                                 setTimeout(self.resetGame.bind(self), 10);
                                 break;
@@ -202,7 +213,7 @@
             fixtureDef.filter.categoryBits = 0x08;
             fixtureDef.filter.maskBits = 0x0f;
             fixtureDef.friction = 0.0;
-            fixtureDef.restitution = 1.005;
+            fixtureDef.restitution = 1.05;
             fixtureDef.density = 1.0;
 
             var ballBd = new BOX2D.b2BodyDef();
@@ -297,7 +308,6 @@
                 aBox2DEntity.hidden = 1;
             }
             this.fieldController.addEntity(aBox2DEntity);
-
             return body;
         },
 
@@ -375,7 +385,7 @@
             return this._world.CreateJoint(revoluteDef);
         },
 
-        addBoard: function (name, uri) {
+        addBoard: function (name) {
             var self = this;
             var x, y;
             // Note! x and y are physics scaled, paddle width = 1
@@ -385,13 +395,13 @@
                 console.log('Placing player 1');
                 x = 0.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
-                self.resetGame();
             }
             else if (Object.keys(this.players).length == 1) {
                 self.emitter.emit('player_added', name, '2');
                 console.log('Placing player 2');
                 x = DemoBox2D.Constants.GAME_WIDTH - 1.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
+                self.resetGame();
             }
             else {
                 return;
@@ -405,7 +415,6 @@
             // Real paddle is connected to the hidden paddle with a revolute joint
             var revolute_joint = this.createRevoluteJoint({bodyA: hidden_body, bodyB: body});
             this.players[name] = {};
-            this.players[name].score = 0;
             this.players[name].left = Object.keys(this.players).length == 1;
             this.players[name].body = body;
             this.players[name].prismatic_joint = prismatic_joint;
@@ -433,9 +442,6 @@
          */
         resetRandomBody: function () {
             // Retrieve a random key, and use it to retreive an entity
-
-
-
             /*
             var allEntities = this.fieldController.getEntities();
             var randomKeyIndex = Math.floor(Math.random() * allEntities._keys.length);

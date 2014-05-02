@@ -74,19 +74,21 @@ nsp.on('endpoint_metadata_changed', function(ep) {
                 nsp.callEndpoint(ep.name, resource.uri, nsp.accel_axis);
                 nsp.subscribeEndpoint(ep.name, resource.uri);
             }
+            else if (resource.uri == '/joy') {
+                nsp.subscribeEndpoint(ep.name, resource.uri);
+            }
         }
     }
 });
 
 nsp.on('endpoint_subscribed', function(name, uri) {
     nsp.callEndpoint(name, '/buzz');
-    game.addBoard(name, uri);
+    nsp.callEndpoint(name, '/lcd', 'info');
 });
 
 game.emitter.on('buzz_paddle', function(name) {
     nsp.callEndpoint(name, '/buzz');
-    //1, 2, 3, 4 string values allowed
-    nsp.callEndpoint(name, '/led', '2');
+    nsp.callEndpoint(name, '/led', 'rgb_reset');
 });
 
 game.emitter.on('player_scored', function(name) {
@@ -147,25 +149,49 @@ http_server.put('/events', function(req, res, next) {
 
         //util.log('Express :: event update :');
         //console.log(util.inspect(data, {depth: null}));
+        if ('registrations' in data) {
+            nsp.setNotificationPushURL();
+            nsp.endpoints = [];
+        }
 
         for (var i in data.notifications) {
+            var path = data.notifications[i].path;
             var buf = new Buffer(data.notifications[i].payload, 'base64');
-            var acc = buf.toString().split(';');
             var name = data.notifications[i].ep;
+            if (path == '/acc') {
+                var acc = buf.toString().split(';');
+                var accel_data = {};
+                for (var j in acc) {
+                    var axis = nsp.accel_axis[j];
+                    if (typeof axis !== 'undefined') {
+                        acc[j] = parseFloat(acc[j]);
+                        if (!isNaN(acc[j]))
+                            accel_data[axis] = acc[j];
+                    }
+                }
 
-            var accel_data = {};
-            for (var j in acc) {
-                var axis = nsp.accel_axis[j];
-                if (typeof axis !== 'undefined') {
-                    acc[j] = parseFloat(acc[j]);
-                    if (!isNaN(acc[j]))
-                        accel_data[axis] = acc[j];
+                if (Object.keys(accel_data).length > 0)
+                    game.updatePlayer(name, accel_data);
+
+            }
+            else if (path == '/joy') {
+                var joy = buf.toString().trim();
+                if (joy == "fire off") {
+                    if (Object.keys(game.players).length < 2) {
+                        var playerFound = false;
+                        for (var player in game.players) {
+                            if (player == name) {
+                                playerFound = true;
+                                break;
+                            }
+                        }
+                        if (!playerFound) {
+                            game.addBoard(name);
+                            nsp.callEndpoint(name, '/buzz');
+                        }
+                    }
                 }
             }
-
-            if (Object.keys(accel_data).length > 0)
-                game.updatePlayer(name, accel_data);
-
             /*
             game.fieldController.getEntities().forEach(function (key, entity) {
                 var body = entity.getBox2DBody();

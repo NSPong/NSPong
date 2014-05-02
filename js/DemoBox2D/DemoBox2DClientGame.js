@@ -71,6 +71,27 @@
                     this.fieldController.addEntity(newEntity);
                     return;
                 }
+
+                var i = entityDesc.x < 200 ? 0 : 1;
+                if (typeof(this.fieldController.view.scores) === 'undefined') {
+                    this.fieldController.view.scores = [];
+                }
+
+                // Draw score
+                var score = new CAAT.TextActor()
+                    .create()
+                    .setFont("50px sans-serif")
+                    .setText(""+entityDesc.score)
+                    //.calcTextSize(this.caatDirector)
+                    .setAlign("center")
+                    .setFillStyle('#000000')
+                    .setOutline(true)
+                    .setOutlineColor('white')
+                    //.cacheAsBitmap()
+                    .setLocation(!i ? 350 : 420, 10);
+                this.fieldController.view.scores[i] = score;
+                this.fieldController.view.addEntity(score);
+
                 anEntityView.setSize(entityDesc.width * DemoBox2D.Constants.PHYSICS_SCALE, entityDesc.height * DemoBox2D.Constants.PHYSICS_SCALE);
                 break;
             case DemoBox2D.Constants.ENTITY_TYPES.BOX:
@@ -117,6 +138,7 @@
                 entityDescription.height = +entityDescAsArray[6];
                 entityDescription.rotation = +entityDescAsArray[7];
                 entityDescription.hidden = +entityDescAsArray[8];
+                entityDescription.score = +entityDescAsArray[9];
                 break;
             case DemoBox2D.Constants.ENTITY_TYPES.BOX:
             case DemoBox2D.Constants.ENTITY_TYPES.CIRCLE:

@@ -292,13 +292,15 @@ NSP.prototype.setNotificationPushURL = function() {
 NSP.prototype.callEndpoint = function(name, uri, body) {
     var ep = this.getEndpoint(name);
 
-    var options = {
-        'method': 'PUT',
-        'path': '/endpoints/'+ep.name+uri,
-        'headers': {
-            'Content-Type': 'text/plain'
-        }
-    };
-    var req = this._NSPHttpReq(options, body, function(){});
+    if (ep) {
+        var options = {
+            'method': 'PUT',
+            'path': '/endpoints/'+ep.name+uri,
+            'headers': {
+                'Content-Type': 'text/plain'
+            }
+        };
+        var req = this._NSPHttpReq(options, body, function(){});
+    }
 }
 
