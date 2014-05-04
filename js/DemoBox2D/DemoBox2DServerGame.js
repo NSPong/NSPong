@@ -137,33 +137,76 @@
                 }
                 else if ((a_c == 0x01 && b_c == 0x08) || (a_c == 0x08 && b_c == 0x01)) {
                     if (a_b == self._wallLeft || b_b == self._wallLeft) {
+                        var lostPlayer;
+                        var reset = 0;
                         for (var name in self.players) {
                             if (!self.players[name].left) {
-                                self.fieldController.getEntities().forEach(function (key, entity) {
+                                reset = self.fieldController.getEntities().forEach(function (key, entity) {
                                     var body = entity.getBox2DBody();
                                     if (body == self.players[name].body) {
-                                        entity.score++;
+                                       entity.score++;
+                                       if (entity.score == 5){
+                                          self.emitter.emit('player_won', name);
+                                          entity.score = 0;
+                                          return 1;
+                                       }
+                                       else{
+                                          self.emitter.emit('player_scored', name);
+                                          return 0;
+                                       }
                                     }
                                 });
-                                self.emitter.emit('player_scored', name);
                                 setTimeout(self.resetGame.bind(self), 10);
                                 break;
                             }
+                            else if (self.players[name].left) {
+                              lostPlayer = name;
+                            }
+                        }
+                        if(reset){
+                           self.fieldController.getEntities().forEach(function (key, entity) {
+                              var body = entity.getBox2DBody();
+                              if (body == self.players[lostPlayer].body) {
+                                 entity.score = 0;
+                              }
+                           });
+                           self.emitter.emit('player_lost', lostPlayer);
                         }
                     }
                     else if (a_b == self._wallRight || b_b == self._wallRight) {
+                        var lostPlayer;
+                        var reset = 0;
                         for (var name in self.players) {
                             if (self.players[name].left) {
-                                self.fieldController.getEntities().forEach(function (key, entity) {
+                                reset = self.fieldController.getEntities().forEach(function (key, entity) {
                                     var body = entity.getBox2DBody();
                                     if (body == self.players[name].body) {
-                                        entity.score++;
+                                       entity.score++;
+                                       if (entity.score == 5){
+                                          self.emitter.emit('player_won', name);
+                                          entity.score = 0;
+                                          return 1;
+                                       }
+                                       else
+                                          self.emitter.emit('player_scored', name);
+                                          return 0;
                                     }
                                 });
-                                self.emitter.emit('player_scored', name);
                                 setTimeout(self.resetGame.bind(self), 10);
                                 break;
                             }
+                            else if (!self.players[name].left) {
+                              lostPlayer = name;
+                            }
+                        }
+                        if(reset){
+                           self.fieldController.getEntities().forEach(function (key, entity) {
+                              var body = entity.getBox2DBody();
+                              if (body == self.players[lostPlayer].body) {
+                                 entity.score = 0;
+                              }
+                           });
+                           self.emitter.emit('player_lost', lostPlayer);
                         }
                     }
                 }

@@ -82,18 +82,30 @@ nsp.on('endpoint_metadata_changed', function(ep) {
 });
 
 nsp.on('endpoint_subscribed', function(name, uri) {
-    nsp.callEndpoint(name, '/buzz');
+    nsp.callEndpoint(name, '/buzz', 'beep');
     nsp.callEndpoint(name, '/lcd', 'info');
 });
 
 game.emitter.on('buzz_paddle', function(name) {
-    nsp.callEndpoint(name, '/buzz');
-    nsp.callEndpoint(name, '/led', 'rgb_reset');
+    nsp.callEndpoint(name, '/buzz', 'beep');
+    nsp.callEndpoint(name, '/led', 'paddle');
 });
 
 game.emitter.on('player_scored', function(name) {
     console.log(name + ' scored!');
+    nsp.callEndpoint(name, '/buzz', 'score');
     nsp.callEndpoint(name, '/led', 'score');
+});
+
+game.emitter.on('player_won', function(name) {
+    console.log(name + ' won!');
+    nsp.callEndpoint(name, '/buzz', 'win');
+    nsp.callEndpoint(name, '/led', 'win');
+});
+
+game.emitter.on('player_lost', function(name) {
+    console.log(name + ' lost!');
+    nsp.callEndpoint(name, '/led', 'reset');
 });
 
 game.emitter.on('player_added', function(name, playernumber) {
