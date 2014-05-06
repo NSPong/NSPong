@@ -88,29 +88,29 @@ nsp.on('endpoint_subscribed', function(name, uri) {
 
 game.emitter.on('buzz_paddle', function(name) {
     nsp.callEndpoint(name, '/buzz', 'beep');
-    nsp.callEndpoint(name, '/led', 'paddle');
+    setTimeout(function(){nsp.callEndpoint(name, '/led', 'paddle');}, 30);
 });
 
 game.emitter.on('player_scored', function(name) {
-    console.log(name + ' scored!');
+    util.log(name + ' scored!');
     nsp.callEndpoint(name, '/buzz', 'score');
-    nsp.callEndpoint(name, '/led', 'score');
+    setTimeout(function(){nsp.callEndpoint(name, '/led', 'score');}, 30);
 });
 
 game.emitter.on('player_won', function(name) {
-    console.log(name + ' won!');
+    util.log(name + ' won!');
     nsp.callEndpoint(name, '/buzz', 'win');
-    nsp.callEndpoint(name, '/led', 'win');
+    setTimeout(function(){nsp.callEndpoint(name, '/led', 'win');}, 30);
 });
 
 game.emitter.on('player_lost', function(name) {
-    console.log(name + ' lost!');
-    nsp.callEndpoint(name, '/led', 'reset');
+    util.log(name + ' lost!');
+    setTimeout(function(){nsp.callEndpoint(name, '/led', 'reset');}, 30);
 });
 
 game.emitter.on('player_added', function(name, playernumber) {
     nsp.callEndpoint(name, '/lcd', playernumber);
-    nsp.callEndpoint(name, '/led', 'reset');
+    setTimeout(function(){nsp.callEndpoint(name, '/led', 'reset');}, 30);
 });
 
 // HTTP server for receiving NSP notifications and serving files
@@ -161,10 +161,15 @@ http_server.put('/events', function(req, res, next) {
 
         //util.log('Express :: event update :');
         //console.log(util.inspect(data, {depth: null}));
-        if ('registrations' in data) {
-            nsp.setNotificationPushURL();
-            nsp.endpoints = [];
-        }
+        /*if ('registrations' in data) {
+            for (var i in data.registrations) {
+                var ep = data.registrations[i];
+                var existing = nsp.getEndpoint(ep.ep);
+                if (!existing) {
+
+                }
+            }
+        }*/
 
         for (var i in data.notifications) {
             var path = data.notifications[i].path;
