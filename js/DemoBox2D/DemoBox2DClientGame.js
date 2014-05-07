@@ -35,6 +35,12 @@
          */
         onViewMouseDown: function (aMouseEvent) {
             this.netChannel.addMessageToQueue(false, RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE, { x: aMouseEvent.point.x, y: aMouseEvent.point.y });
+
+            for (var i in this.fieldController.view.scores) {
+                var score = this.fieldController.view.scores[i];
+                this.fieldController.view.removeEntity(score);
+            }
+            this.fieldController.view.scores = [];
         },
 
         /**

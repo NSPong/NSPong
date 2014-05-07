@@ -128,6 +128,15 @@ NSP.prototype.getEndpoint = function(name) {
     return null;
 }
 
+NSP.prototype.removeEndpoint = function(name) {
+    for (var i in this.endpoints) {
+        if (this.endpoints[i].name == name) {
+            this.endpoints.splice(i, 1);
+            break;
+        }
+    }
+}
+
 NSP.prototype.updateEndpoints = function() {
     var self = this;
     var options = {
@@ -253,8 +262,8 @@ NSP.prototype.subscribeEndpoint = function(name, uri) {
                 var req = this._NSPHttpReq(options, null, function(body, res){
                     if (res.statusCode == 200) {
                         util.log('Successfully subscribed: '+ep.name+uri);
-                        util.log('endpoint_subscribed emitted');
-                        self.emit('endpoint_subscribed', ep.name, uri);
+                        util.log('resource_subscribed emitted');
+                        self.emit('resource_subscribed', ep.name, uri);
                     }
                     else {
                         util.log('Subscribing failed for: '+ep.name+uri);

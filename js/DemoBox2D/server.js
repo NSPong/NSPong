@@ -43,8 +43,12 @@ require("./DemoBox2DEntity.js");
 require("./PaddleEntity.js");
 require("./DemoBox2DServerGame.js");
 
-var game = new DemoBox2D.DemoServerGame();
-game.startGameClock();
+var game = null;
+function createGame() {
+    game = new DemoBox2D.DemoServerGame();
+    game.startGameClock();
+}
+createGame();
 
 var nsp = new NSP({
     host: 'localhost',
@@ -58,15 +62,21 @@ var nsp = new NSP({
 nsp.accel_axis = 'xy';
 
 setInterval(function(){
-    if (!nsp.push_url_set) {
+    if (!nsp.push_url_set || !nsp.online) {
         nsp.setNotificationPushURL();
     }
-    nsp.updateEndpoints();
-    util.log('Endpoints:');
-    util.log(util.inspect(nsp.endpoints, {depth: null}));
+    else if (nsp.online) {
+        nsp.updateEndpoints();
+        util.log('Endpoints:');
+        util.log(util.inspect(nsp.endpoints, {depth: null}));
+    }
 }, 5000);
 
 nsp.on('endpoint_metadata_changed', function(ep) {
+    nsp.callEndpoint(ep.name, '/buzz', 'beep');
+    nsp.callEndpoint(ep.name, '/lcd', 'info');
+    setTimeout(function(){nsp.callEndpoint(ep.name, '/led', 'reset');}, 30);
+
     if (Object.keys(game.players).length <= 2) {
         for (var i in ep.meta) {
             var resource = ep.meta[i];
@@ -81,9 +91,13 @@ nsp.on('endpoint_metadata_changed', function(ep) {
     }
 });
 
-nsp.on('endpoint_subscribed', function(name, uri) {
-    nsp.callEndpoint(name, '/buzz', 'beep');
+game.emitter.on('reset_lcd', function(name) {
     nsp.callEndpoint(name, '/lcd', 'info');
+    nsp.callEndpoint(name, '/led', 'reset');
+});
+
+game.emitter.on('init_new_game', function() {
+    setTimeout(createGame, 100);
 });
 
 game.emitter.on('buzz_paddle', function(name) {
@@ -159,17 +173,17 @@ http_server.put('/events', function(req, res, next) {
             return res.end('Error: ' + err.message);
         }
 
-        //util.log('Express :: event update :');
-        //console.log(util.inspect(data, {depth: null}));
-        /*if ('registrations' in data) {
+        if ('registrations' in data) {
+            //util.log('Express :: event update :');
+            //console.log(util.inspect(data, {depth: null}));
             for (var i in data.registrations) {
                 var ep = data.registrations[i];
                 var existing = nsp.getEndpoint(ep.ep);
-                if (!existing) {
-
+                if (existing) {
+                    nsp.removeEndpoint(ep.ep);
                 }
             }
-        }*/
+        }
 
         for (var i in data.notifications) {
             var path = data.notifications[i].path;

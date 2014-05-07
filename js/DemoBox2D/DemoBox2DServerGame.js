@@ -47,10 +47,10 @@
             this.cmdMap[RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE] = this.shouldUpdatePlayer;
         },
 
-        resetGame: function(reset_score) {
+        resetGame: function(reset_type) {
             util.log('Game reset');
 
-            if (reset_score) {
+            if (reset_type && reset_type <= 2) {
                 for (var name in this.players) {
                     this.fieldController.getEntities().forEach(function (key, entity) {
                         if (entity.entityType == DemoBox2D.Constants.ENTITY_TYPES.RECT) {
@@ -58,6 +58,19 @@
                         }
                     });
                 }
+            }
+            if (reset_type == 2) {
+                // Delete entities
+                for (var name in this.players) {
+                    var player = this.players[name];
+                    this.emitter.emit('reset_lcd', name);
+                    util.log('reset_lcd emitted: ' + name);
+                    this.fieldController.removeEntity(player.entity.entityid);
+                    this.fieldController.removeEntity(player.hidden_entity.entityid);
+                    this._world.DestroyBody(player.entity.getBox2DBody());
+                    this._world.DestroyBody(player.hidden_entity.getBox2DBody());
+                }
+                this.players = {};
             }
 
             var bodyPosition = new BOX2D.b2Vec2(DemoBox2D.Constants.GAME_WIDTH / 2 - DemoBox2D.Constants.ENTITY_BOX_SIZE,
@@ -69,8 +82,13 @@
             angle += Math.random() > 0.5 ? 0 : Math.PI;
             var force = 10;
             var impulse = new BOX2D.b2Vec2(Math.cos(angle) * force, Math.sin(angle) * force);
-            setTimeout(function(){this.ball.ApplyImpulse(impulse, bodyPosition);}.bind(this), 2000);
-            this.resetWatchdog();
+            if (!reset_type || reset_type < 2) {
+                setTimeout(function(){this.ball.ApplyImpulse(impulse, bodyPosition);}.bind(this), 2000);
+                this.resetWatchdog();
+            }
+            else {
+                clearTimeout(this.wd_timer);
+            }
         },
 
         /**
@@ -127,7 +145,7 @@
 
                 if ((a_c == 0x08 && b_c == 0x04) || (a_c == 0x04 && b_c == 0x08)) {
                     for (var name in self.players) {
-                        if (self.players[name].body == a_b || self.players[name].body == b_b) {
+                        if (self.players[name].entity.getBox2DBody() == a_b || self.players[name].entity.getBox2DBody() == b_b) {
                             self.emitter.emit('buzz_paddle', name);
                             util.log('buzz_paddle emitted: ' + name);
                             self.resetWatchdog();
@@ -135,15 +153,15 @@
                         }
                     }
                 }
-                else if ((a_c == 0x01 && b_c == 0x08) || (a_c == 0x08 && b_c == 0x01)) {
+                else if (Object.keys(self.players).length > 1 && (a_c == 0x01 && b_c == 0x08) || (a_c == 0x08 && b_c == 0x01)) {
                     var emitFunction = function() {
-                        var reset_score = false;
+                        var reset_score = 0;
                         self.fieldController.getEntities().forEach(function (key, entity) {
                             var body = entity.getBox2DBody();
-                            if (body == self.players[name].body) {
+                            if (body == self.players[name].entity.getBox2DBody()) {
                                 entity.score++;
                                 if (entity.score == 5) {
-                                    reset_score = true;
+                                    reset_score = 1;
                                     var losing_players = Object.keys(self.players);
                                     var i = losing_players.indexOf(name);
                                     losing_players.splice(i, 1);
@@ -317,14 +335,14 @@
                 aBox2DEntity.hidden = 1;
             }
             this.fieldController.addEntity(aBox2DEntity);
-            return body;
+            return aBox2DEntity;
         },
 
         updatePlayer: function (name, data) {
             //console.log('updatePlayer ' + name + ' : ' + util.inspect(data));
 
             if (name in this.players) {
-                var body = this.players[name].body;
+                var body = this.players[name].entity.getBox2DBody();
                 var is_left = this.players[name].left;
                 var velocity = body.GetLinearVelocity();
                 var position = body.GetPosition();
@@ -410,22 +428,25 @@
                 console.log('Placing player 2');
                 x = DemoBox2D.Constants.GAME_WIDTH - 1.5;
                 y = DemoBox2D.Constants.GAME_HEIGHT / 2;
-                self.resetGame();
+                self.resetGame(1);
             }
             else {
                 return;
             }
 
             // Creating a paddle and a hidden "paddle" behind it            
-            var body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3, false);
-            var hidden_body = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3, true);
+            var entity = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3, false);
+            var body = entity.getBox2DBody();
+            var hidden_entity = this.createPaddle(x, y, 0, DemoBox2D.Constants.ENTITY_BOX_SIZE, DemoBox2D.Constants.ENTITY_BOX_SIZE * 3, true);
+            var hidden_body = hidden_entity.getBox2DBody();
             // Hidden paddle is connected to world body with a prismatic joint
             var prismatic_joint = this.createPrismaticJoint({anchorA: new BOX2D.b2Vec2(x, y), axis: new BOX2D.b2Vec2(0, 1), bodyA: hidden_body, bodyB: this._world.GetGroundBody()});
             // Real paddle is connected to the hidden paddle with a revolute joint
             var revolute_joint = this.createRevoluteJoint({bodyA: hidden_body, bodyB: body});
             this.players[name] = {};
             this.players[name].left = Object.keys(this.players).length == 1;
-            this.players[name].body = body;
+            this.players[name].entity = entity;
+            this.players[name].hidden_entity = hidden_entity;
             this.players[name].prismatic_joint = prismatic_joint;
             this.players[name].revolute_joint = revolute_joint;
             util.log('Added player with endpoint: '+name);
@@ -492,7 +513,7 @@
                 var is_player = false;
 
                 for (name in self.players) {
-                    if (body == self.players[name].body) {
+                    if (body == self.players[name].entity.getBox2DBody()) {
                         is_player = true;
                     }
                 }
@@ -502,7 +523,7 @@
                 }
             }, this);
 
-            this.resetGame();
+            this.resetGame(2);
         },
 
         shouldRemovePlayer: function (aClientid) {

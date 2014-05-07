@@ -207,7 +207,9 @@
                 if (typeof(entityDesc.score) !== 'undefined' && entityDesc.hidden != 1) {
                     var i = entityDesc.x < 200 ? 0 : 1;
                     var score = this.fieldController.view.scores[i];
-                    score.setText(""+entityDesc.score);
+                    if (score) {
+                        score.setText(""+entityDesc.score);
+                    }
                 }
 
                 activeEntities[entityid] = true;
