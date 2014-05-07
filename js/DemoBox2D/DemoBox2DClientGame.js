@@ -36,11 +36,21 @@
         onViewMouseDown: function (aMouseEvent) {
             this.netChannel.addMessageToQueue(false, RealtimeMultiplayerGame.Constants.CMDS.PLAYER_UPDATE, { x: aMouseEvent.point.x, y: aMouseEvent.point.y });
 
+            var to_remove = [];
             for (var i in this.fieldController.view.scores) {
                 var score = this.fieldController.view.scores[i];
                 this.fieldController.view.removeEntity(score);
             }
             this.fieldController.view.scores = [];
+            for (var i in this.fieldController.view.caatScene.childrenList) {
+                var child = this.fieldController.view.caatScene.childrenList[i];
+                if (typeof(child.setText) !== 'undefined') {
+                    to_remove.push(i);
+                }
+            }
+            for (var i in to_remove) {
+                this.fieldController.view.caatScene.childrenList.splice(to_remove[i], 1);
+            }
         },
 
         /**
