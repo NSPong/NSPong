@@ -1,3 +1,8 @@
+/*
+ * NSPong
+ * Copyright (c) 2014 Sampsa Sarjanoja, Tuomas Seppänen, Sakari Alapuranen
+ */
+
 /**
  File:
  server.js
@@ -223,16 +228,6 @@ http_server.put('/events', function(req, res, next) {
                     }
                 }
             }
-            /*
-            game.fieldController.getEntities().forEach(function (key, entity) {
-                var body = entity.getBox2DBody();
-                var bodyPosition = body.GetPosition();
-                //var angle = Math.atan2(pos.y - bodyPosition.y, pos.x - bodyPosition.x);
-                var force = x;
-                var impulse = new BOX2D.b2Vec2(0 * force, 1 * force);
-                //body.ApplyImpulse(impulse, bodyPosition);
-            }, game);
-            */
         }
 
         res.end();
