@@ -1,5 +1,6 @@
 /*
  * NSP API access library
+ * Copyright (c) 2014 Sampsa Sarjanoja, Tuomas Seppänen, Sakari Alapuranen
  */
 
 var util = require('util'),

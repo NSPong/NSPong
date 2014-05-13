@@ -1,3 +1,8 @@
+/*
+ * NSPong
+ * Copyright (c) 2014 Sampsa Sarjanoja, Tuomas Seppänen, Sakari Alapuranen
+ */
+
 /**
  File:
  DemoBox2DClientGame.js
@@ -171,7 +176,7 @@
          */
         netChannelDidConnect: function (messageData) {
             DemoBox2D.DemoClientGame.superclass.netChannelDidConnect.call(this, messageData);
-            DemoBox2D.DemoClientGame.prototype.log("DemoClientGame: Joining Game");
+            DemoBox2D.DemoClientGame.prototype.log("NSPongClientGame: Joining Game");
             this.joinGame("Player" + this.netChannel.getClientid()); // Automatically join the game with some name
         },
 
@@ -180,7 +185,7 @@
          */
         netChannelDidDisconnect: function (messageData) {
             DemoBox2D.DemoClientGame.superclass.netChannelDidDisconnect.call(this, messageData);
-            DemoBox2D.DemoClientGame.prototype.log("DemoClientGame: netChannelDidDisconnect"); // Display disconnect
+            DemoBox2D.DemoClientGame.prototype.log("NSPongClientGame: netChannelDidDisconnect"); // Display disconnect
         },
 
         /**

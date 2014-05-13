@@ -37,11 +37,11 @@ require("../model/WorldEntityDescription.js");
 require("../input/Keyboard.js");
 
 //require("v8-profiler");
-require("./DemoBox2DApp.js");
-require("./DemoBox2DConstants.js");
-require("./DemoBox2DEntity.js");
+require("./NSPongApp.js");
+require("./NSPongConstants.js");
+require("./NSPongEntity.js");
 require("./PaddleEntity.js");
-require("./DemoBox2DServerGame.js");
+require("./NSPongServerGame.js");
 
 var game = null;
 function createGame() {
@@ -135,7 +135,7 @@ server.listen(port);
 util.log('Express listening on port '+port);
 
 http_server.get('/', function(req, res) {
-    var index = path.join(path.dirname(path.dirname(__dirname)), 'DemoBox2DApp.html');
+    var index = path.join(path.dirname(path.dirname(__dirname)), 'NSPong.html');
     util.log(util.format('Express :: Trying to load %s', index));
     res.sendfile(index);
 });

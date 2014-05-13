@@ -1,3 +1,8 @@
+/*
+ * NSPong
+ * Copyright (c) 2014 Sampsa Sarjanoja, Tuomas Seppänen, Sakari Alapuranen
+ */
+
 /**
  File:
  DemoBox2DConstants.js
