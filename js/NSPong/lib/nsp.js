@@ -44,8 +44,10 @@ module.exports = NSP;
 
 // Private library functions
 
+// A global number for sequencing the requests
 var g_request_number = 1;
 
+// A common method for making various NSP HTTP requests
 NSP.prototype._NSPHttpReq = function(options, body, callback, args) {
     if (typeof options === 'undefined') options = {};
     var self = this;
@@ -119,7 +121,7 @@ NSP.prototype._NSPHttpReq = function(options, body, callback, args) {
     return req;
 }
 
-// Public library functions
+// Public library functions below
 
 NSP.prototype.getEndpoint = function(name) {
     for (var i in this.endpoints)
@@ -138,6 +140,8 @@ NSP.prototype.removeEndpoint = function(name) {
     }
 }
 
+// Fetches the current registered endpoints from NSP and also
+// gets metadata for them
 NSP.prototype.updateEndpoints = function() {
     var self = this;
     var options = {
@@ -193,6 +197,7 @@ NSP.prototype.updateEndpoints = function() {
             something_changed |= is_removed;
         }
 
+        // Update metadata if changes
         if (something_changed) {
             self.endpoints = data;
             util.log('endpoints_changed emitted');
@@ -299,6 +304,7 @@ NSP.prototype.setNotificationPushURL = function() {
     });
 }
 
+// Method for calling a resource on an endpoint
 NSP.prototype.callEndpoint = function(name, uri, body) {
     var ep = this.getEndpoint(name);
 

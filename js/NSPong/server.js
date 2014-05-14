@@ -48,6 +48,8 @@ require("./NSPongEntity.js");
 require("./PaddleEntity.js");
 require("./NSPongServerGame.js");
 
+// Global variables and game initialization
+
 var game = null;
 function createGame() {
     game = new DemoBox2D.DemoServerGame();
@@ -66,6 +68,7 @@ var nsp = new NSP({
 
 nsp.accel_axis = 'xy';
 
+// A loop for keeping endpoints up to date
 setInterval(function(){
     if (!nsp.push_url_set || !nsp.online) {
         nsp.setNotificationPushURL();
@@ -77,6 +80,7 @@ setInterval(function(){
     }
 }, 5000);
 
+// Called when a board has been registered to NSP
 nsp.on('endpoint_metadata_changed', function(ep) {
     nsp.callEndpoint(ep.name, '/buzz', 'beep');
     nsp.callEndpoint(ep.name, '/lcd', 'info');
