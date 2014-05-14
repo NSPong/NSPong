@@ -1,5 +1,8 @@
 __NSPong is a HTML5 demo game developed on top of ARM Sensinode’s NanoService Platform. The game uses for example RealTimeMultiplayerNodeJS, Box2D and CAAT libraries, which are specifically built for HTML5 multiplayer games with the client/server model__
 
+### NOTE!
+NSPong is meant to be used with mbed LPC1768 application boards and software from [http://mbed.org/teams/NSPong/code/NS_Game_Controller/](http://mbed.org/teams/NSPong/code/NS_Game_Controller/)
+
 # Video Demo
 [https://vimeo.com/95207889](https://vimeo.com/95207889)
 
