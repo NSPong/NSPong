@@ -8,12 +8,13 @@ NSPong is meant to be used with mbed LPC1768 application boards and software fro
 
 # How to use
 1. Download this repository
-2. In the terminal, navigate to the root directory of the repo
-3. Run "npm install"
-4. Download and unzip NanoService platform from [here](http://silver.arm.com)
-5. Run NanoService platform: nsp-devel/bin/runNSP.bat
-6. Run "node js/NSPong/server.js"
-7. From the browser, open [http://127.0.0.1:4004](http://127.0.0.1:4004)
+2. Download [Node.js](http://nodejs.org)
+3. In the terminal, navigate to the root directory of the repo
+4. Run "npm install"
+5. Download and unzip NanoService platform from [here](http://silver.arm.com)
+6. Run NanoService platform: nsp-devel/bin/runNSP.bat
+7. Run "node js/NSPong/server.js"
+8. From the browser, open [http://127.0.0.1:4004](http://127.0.0.1:4004)
 
 # Libraries used
 * [RealTimeMultiplayerNodeJS](https://github.com/onedayitwillmake/RealtimeMultiplayerNodeJs) - Base for developing a real-time multi-client HTML5 game
